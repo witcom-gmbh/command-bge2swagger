@@ -1,0 +1,1 @@
+java -jar modules/swagger-codegen-cli/target/swagger-codegen-cli.jar generate -l java -c bge-config.json -i /tmp/swagger-bge.json -DapiTests=false -DmodelTests=false -o samples/client/rest-bge/
