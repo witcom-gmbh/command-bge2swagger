@@ -1,4 +1,6 @@
 app:
   command:
     base-url: ${CMD_BASE_URL}
-#:https://rmdb.workspace.witcom.de    
+  generator:
+    output-dir: ${GENERATOR_OUTPUT_DIR:/tmp}    
+    

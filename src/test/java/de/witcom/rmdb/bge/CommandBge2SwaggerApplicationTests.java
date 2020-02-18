@@ -46,7 +46,11 @@ public class CommandBge2SwaggerApplicationTests {
 		ArrayList<String> filterList = new ArrayList<String>();
 		//filterList.add("serviceTelcoPath");
 		//filterList.add("serviceAccessPoint");
-		//filterList.add("campus");
+		filterList.add("campus");
+		filterList.add("building");
+		filterList.add("room");
+		filterList.add("floor");
+		filterList.add("zone");
 		//filterList.add("processor");
 		//filterList.add("mainMemory");
 		//filterList.add("hardDisk");

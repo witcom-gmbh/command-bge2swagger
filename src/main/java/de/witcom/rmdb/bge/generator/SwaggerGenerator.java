@@ -900,7 +900,23 @@ public class SwaggerGenerator {
 
 			}
 			if (attr.getType()!=null){
-				log.debug("Spezialfall {}",attr.getType().getClass().getName());
+				//log.debug("Spezialfall {}",attr.getType().getClass().getName());
+				
+				switch (attr.getType().getClass().getSimpleName()){
+				case "ListTypeDto":
+					//log.debug("Spezialfall ListTypeDto");
+					ListTypeDto dto = (ListTypeDto) attr.getType();
+					props.put(attr.getId(),new ArrayProperty(new StringProperty()));
+				break;
+				case "TypeReferenceDto":
+					//log.debug("Reference to {}",attr.getType().asReference().getRef());
+					//props.put(attr.getId(),mapTypeReferenceToProperty(attr));
+					props.put(attr.getId(),new StringProperty());
+				break;	
+				default:
+					log.warn("Attribute {} has unhandled type {}",attr.getId(),attr.getClass().getSimpleName());
+				}
+				
 			}
 		}
 		definition.setProperties(props);
@@ -922,19 +938,20 @@ public class SwaggerGenerator {
 
 			}
 			if (attr.getType()!=null){
-				log.debug("Spezialfall {} {}",attr.getType().getClass().getSimpleName(),attr.getType().getClass().getName());
+				//log.debug("Spezialfall {} {}",attr.getType().getClass().getSimpleName(),attr.getType().getClass().getName());
 				switch (attr.getType().getClass().getSimpleName()){
 				case "ListTypeDto":
-					log.debug("Spezialfall ListTypeDto");
+					//log.debug("Spezialfall ListTypeDto");
 					ListTypeDto dto = (ListTypeDto) attr.getType();
 					props.put(attr.getId(),new ArrayProperty(new StringProperty()));
 				break;
 				case "TypeReferenceDto":
-					log.debug("Reference to {}",attr.getType().asReference().getRef());
-					props.put(attr.getId(),mapTypeReferenceToProperty(attr));
+					//log.debug("Reference to {}",attr.getType().asReference().getRef());
+					//props.put(attr.getId(),mapTypeReferenceToProperty(attr));
+					props.put(attr.getId(),new StringProperty());
 				break;	
 				default:
-					log.warn("Unknown type {}",attr.getType().asReference().getRest().getUrl());
+					log.warn("Attribute {} has unhandled type {}",attr.getId(),attr.getClass().getSimpleName());
 				}
 			}
 		}
@@ -943,6 +960,14 @@ public class SwaggerGenerator {
 		this.swaggerDef.getDefinitions().put(name, definition);
 	}
 	
+	/**
+	 * Maps TypeReference-Attribute to property. Possible values are mapped to ENUM-values
+	 * Todo #1 : BGE-Definition does not send back @type - no chance to differentiate the different types, except parsing JSON manually
+	 * ToDo #2 : Cache referenced types to speed up the mapping
+	 * 
+	 * @param attr
+	 * @return swagger string-property
+	 */
 	private Property mapTypeReferenceToProperty(AttributeDto attr) {
 		StringProperty prop = new StringProperty();
 		String defUrl = attr.getType().asReference().getRest().getUrl();
@@ -1136,6 +1161,13 @@ public class SwaggerGenerator {
 				.encode();
 	}
 
+	public void updateSwaggerInfo(String title,String description) {
+		
+		swaggerDef.getInfo().setTitle(title);
+		swaggerDef.getInfo().setDescription(description);
+		
+	}
+	
 	@PostConstruct
 	public void initSwaggerGenerator() throws Exception{
 		log.debug("Init generator");
