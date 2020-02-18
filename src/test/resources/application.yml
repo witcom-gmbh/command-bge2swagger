@@ -1,0 +1,4 @@
+app:
+  command:
+    base-url: ${CMD_BASE_URL}
+#:https://rmdb.workspace.witcom.de    

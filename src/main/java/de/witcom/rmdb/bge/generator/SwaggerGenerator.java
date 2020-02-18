@@ -1,6 +1,7 @@
 package de.witcom.rmdb.bge.generator;
 
 import java.io.IOException;
+import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -14,6 +15,7 @@ import javax.annotation.PostConstruct;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -31,17 +33,22 @@ import org.springframework.web.util.UriComponentsBuilder;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonAppend.Attr;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fntsoftware.businessgateway.definition.SimpleTypeDef;
 import com.fntsoftware.businessgateway.generation.webservice.data.ServiceStatusData;
 import com.fntsoftware.businessgateway.internal.doc.dto.AttributeDto;
 import com.fntsoftware.businessgateway.internal.doc.dto.EntityDto;
 import com.fntsoftware.businessgateway.internal.doc.dto.EntityInfoDto;
 import com.fntsoftware.businessgateway.internal.doc.dto.ListTypeDto;
 import com.fntsoftware.businessgateway.internal.doc.dto.OperationDto;
+import com.fntsoftware.businessgateway.internal.doc.dto.PossibleValueDto;
 import com.fntsoftware.businessgateway.internal.doc.dto.QueryDto;
 import com.fntsoftware.businessgateway.internal.doc.dto.RelationDto;
+import com.fntsoftware.businessgateway.internal.doc.dto.SimpleTypeDto;
 import com.fntsoftware.businessgateway.internal.doc.dto.SubOperationDto;
 import com.fntsoftware.businessgateway.internal.doc.dto.SystemInfoDto;
 import com.fntsoftware.businessgateway.internal.doc.dto.TypeDto;
+import com.fntsoftware.businessgateway.internal.doc.dto.TypeReferenceDto;
 
 import de.witcom.rmdb.bge.Constants;
 import de.witcom.rmdb.bge.mixins.TypeDtoMixIn;
@@ -77,8 +84,11 @@ public class SwaggerGenerator {
 	private Swagger swaggerDef;
 
 	protected ObjectMapper mapper;
-	protected String swaggerHost = "rmdb.workspace.witcom.de";
-	protected String bgeBaseUrl = "https://" + swaggerHost;
+	
+	protected String swaggerHost;
+	
+	@Value("${app.command.base-url}")
+	protected String bgeBaseUrl;
 
 	public void generateEntities() throws Exception{
 		this.generateEntities(new ArrayList<String>());
@@ -396,8 +406,11 @@ public class SwaggerGenerator {
 		//attribute
 
 		String operationBaseName = StringUtils.capitalize(operation.getId()) + StringUtils.capitalize(getEntityId(entity));
-		String pathToRemove = bgeBaseUrl + swaggerDef.getBasePath();
-		String opPath = operation.getRest().getService().getUrl().substring(pathToRemove.length());
+		
+		//String pathToRemove = bgeBaseUrl + swaggerDef.getBasePath();
+		//pathToRemove = swaggerDef.getBasePath();
+		//log.debug("base-url {}, rem {}, basepath {}, service {}",bgeBaseUrl,pathToRemove,swaggerDef.getBasePath(),operation.getRest().getService().getUrl());
+		String opPath = this.getOperationPath(operation.getRest().getService().getUrl());
 		List<String> tags = new ArrayList<String>();
 		tags.add(entity.getId());
 		log.debug("Lege Operation {} an",operationBaseName);
@@ -462,8 +475,9 @@ public class SwaggerGenerator {
 		
 		
 		//Path-Objekt erstellen
-		String pathToRemove = bgeBaseUrl + swaggerDef.getBasePath();
-		String restPath = query.getRest().getService().getUrl().substring(pathToRemove.length());
+		//String pathToRemove = bgeBaseUrl + swaggerDef.getBasePath();
+		//String restPath = query.getRest().getService().getUrl().substring(pathToRemove.length());
+		String restPath = this.getOperationPath(query.getRest().getService().getUrl());
 		List<String> tags = new ArrayList<String>();
 		tags.add(entity.getId());
 		
@@ -490,6 +504,29 @@ public class SwaggerGenerator {
 		
 		
 		
+		
+	}
+	
+	/**
+	 * Extracts REST-Operation path from BGP-Service
+	 * FNT-Command < 12 (?) send full URL in Service, FNT >= 12 only the path
+	 * 
+	 * @param url - Service-URL of BGE-Operation
+	 * @return REST-Opertion path for swagger-definition
+	 */
+	private String getOperationPath(String url) {
+		
+		String pathToRemove="";
+		//Cmd 12 only has relative path
+		if (url.startsWith("/")) {
+			pathToRemove =  swaggerDef.getBasePath();
+			
+		} else {
+			pathToRemove = bgeBaseUrl + swaggerDef.getBasePath();
+			
+		}
+		
+		return url.substring(pathToRemove.length());
 		
 	}
 
@@ -581,8 +618,8 @@ public class SwaggerGenerator {
 		this.swaggerDef.addDefinition(responseObjectName, definition);
 		
 		//Path-Objekt erstellen
-		String pathToRemove = bgeBaseUrl + swaggerDef.getBasePath();
-		String restPath = relation.getRest().getService().getUrl().substring(pathToRemove.length());
+		//String pathToRemove = bgeBaseUrl + swaggerDef.getBasePath();
+		String restPath = this.getOperationPath(relation.getRest().getService().getUrl());
 		List<String> tags = new ArrayList<String>();
 		tags.add(entity.getId());
 		
@@ -888,17 +925,47 @@ public class SwaggerGenerator {
 				log.debug("Spezialfall {} {}",attr.getType().getClass().getSimpleName(),attr.getType().getClass().getName());
 				switch (attr.getType().getClass().getSimpleName()){
 				case "ListTypeDto":
+					log.debug("Spezialfall ListTypeDto");
 					ListTypeDto dto = (ListTypeDto) attr.getType();
 					props.put(attr.getId(),new ArrayProperty(new StringProperty()));
+				break;
+				case "TypeReferenceDto":
+					log.debug("Reference to {}",attr.getType().asReference().getRef());
+					props.put(attr.getId(),mapTypeReferenceToProperty(attr));
 				break;	
 				default:
-					log.warn("Unknown type {}",attr.getType().getClass().getSimpleName());
+					log.warn("Unknown type {}",attr.getType().asReference().getRest().getUrl());
 				}
 			}
 		}
 		definition.setProperties(props);
 		definition.setTitle(name);
 		this.swaggerDef.getDefinitions().put(name, definition);
+	}
+	
+	private Property mapTypeReferenceToProperty(AttributeDto attr) {
+		StringProperty prop = new StringProperty();
+		String defUrl = attr.getType().asReference().getRest().getUrl();
+		//log.debug(defUrl);
+		try {
+			JsonNode def = this.restCall(getTypeDefUri(defUrl));
+
+			//Retured Object is missing the type definition - lets suppose these are simple types
+			((ObjectNode) def).put("@type", "simple");
+			
+			SimpleTypeDto typeDef = mapper.readValue(def.toString(),SimpleTypeDto.class);
+			List<String> values = typeDef.getPossibleValues()
+					.stream()
+					.map( m -> m.getValue())
+					.collect(Collectors.toList());
+			
+			prop.setEnum(values);
+		} catch (Exception e) {
+			log.error("Unable to get Type-Definition {}",e.toString());
+		}
+		
+		return prop;
+		
 	}
 
 	private Property mapAttributeToProperty(AttributeDto attr) throws Exception{
@@ -909,7 +976,7 @@ public class SwaggerGenerator {
 			prop = new StringProperty();
 			StringProperty strProp = new StringProperty();
 			prop = strProp;
-			//prop.
+			
 			break;
 		case "NUMERIC":
 			prop = new DecimalProperty("BigDecimal"); 
@@ -1024,6 +1091,8 @@ public class SwaggerGenerator {
 		return definition;
 	}
 
+
+	
 	private UriComponents getBGEDefUri(){
 
 		return UriComponentsBuilder
@@ -1032,6 +1101,14 @@ public class SwaggerGenerator {
 				.encode();
 	}
 
+	private UriComponents getTypeDefUri(String restUrl){
+		return UriComponentsBuilder
+				.fromUriString(bgeBaseUrl + restUrl)
+				.build()
+				.encode();
+	}
+
+	
 	private UriComponents getEntityDefUri(String entityName){
 
 		return UriComponentsBuilder
@@ -1063,18 +1140,44 @@ public class SwaggerGenerator {
 	public void initSwaggerGenerator() throws Exception{
 		log.debug("Init generator");
 		this.swaggerDef = new Swagger();
+		
+		List<Scheme> schemes = new ArrayList<Scheme>();
+		
 		swaggerDef.setDefinitions(new HashMap<String,Model>());
 		swaggerDef.setPaths(new HashMap<String,Path>());
+		
+		
+		URL url = new URL(this.bgeBaseUrl);
+		this.swaggerHost = url.getAuthority();
+		
+		log.debug(this.swaggerHost);
+		
+		if (url.getProtocol().toLowerCase().equals("https")) {
+			schemes.add(Scheme.HTTPS);
+		} else if (url.getProtocol().toLowerCase().equals("http")) {
+			schemes.add(Scheme.HTTP);
+		} else {
+			log.warn("Unknown protocol {}",url.getProtocol());
+		}
+		
+		swaggerDef.setSchemes(schemes);
+
 		
 		//ObjectMapper
 		mapper = new ObjectMapper();
 		mapper.addMixIn(TypeDto.class, TypeDtoMixIn.class);
+		JsonNode bgedefinition = null;
+		try {
+			 bgedefinition = restCall(getBGEDefUri());
+		} catch (Exception e) {
+			log.error("Error getting BGE Definition from {}",getBGEDefUri() );
+			throw new Exception ("Generator could not be initialized");
+		}
 		
-		JsonNode bgedefinition = restCall(getBGEDefUri());
 		//ObjectMapper mapper = new ObjectMapper();
 		//mapper.addMixIn(TypeDto.class, TypeDtoMixIn.class);
 		SystemInfoDto dto = mapper.readValue(bgedefinition.toString(), SystemInfoDto.class);
-		log.debug(dto.getVersion());
+		log.debug("Command version {}",dto.getVersion());
 
 		Info info = new Info();
 		info.setTitle("Swagger for Command BGE");
@@ -1086,10 +1189,8 @@ public class SwaggerGenerator {
 		//swaggerDef.setBasePath("/axis/api/rest");
 		swaggerDef.setBasePath("/axis");
 
-		List<Scheme> schemes = new ArrayList<Scheme>();
-		schemes.add(Scheme.HTTPS);
-		swaggerDef.setSchemes(schemes);
-
+		//schemes.add(Scheme.HTTPS);
+		
 		//generische erzeugen
 		//ServiceStatusData
 		ModelImpl definition = new ModelImpl();
@@ -1176,7 +1277,7 @@ public class SwaggerGenerator {
 		this.swaggerDef.getDefinitions().put("LoginResponse", definition);
 		
 		//Path-Objekt erstellen
-		String restPath = "/api/rest/login";
+		String restPath = "/api/rest/businessGateway/login";
 		List<String> tags = new ArrayList<String>();
 		tags.add("REST");
 		Operation op = new Operation();
@@ -1217,7 +1318,7 @@ public class SwaggerGenerator {
 		this.swaggerDef.getDefinitions().put("BaseResponse", definition);
 		*/
 		//Path-Objekt erstellen
-		restPath = "/api/rest/logout";
+		restPath = "/api/rest/businessGateway/logout";
 		tags = new ArrayList<String>();
 		tags.add("REST");
 		op = getBaseOperation("logout",restPath,tags);

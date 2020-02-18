@@ -46,11 +46,16 @@ public class CommandBge2SwaggerApplicationTests {
 		ArrayList<String> filterList = new ArrayList<String>();
 		//filterList.add("serviceTelcoPath");
 		//filterList.add("serviceAccessPoint");
-		//filterList.add("virtualServer");
+		//filterList.add("campus");
+		//filterList.add("processor");
+		//filterList.add("mainMemory");
+		//filterList.add("hardDisk");
+		
+		
 		//filterList.add("custom.ctcdynPostalAddress");
 		
 		swaggerGen.generateEntities(filterList);
-		swaggerGen.generateRestServices();
+		//swaggerGen.generateRestServices();
 		
 		ObjectMapper mapper = new ObjectMapper();
 		mapper.setSerializationInclusion(Include.NON_NULL);
