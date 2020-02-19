@@ -15,6 +15,7 @@ import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -31,7 +32,8 @@ import de.witcom.rmdb.bge.generator.SwaggerGenerator;
 import de.witcom.rmdb.bge.mixins.TypeDtoMixIn;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest
+//@ActiveProfiles("test")
+@SpringBootTest(properties = {"job.autorun.enabled=false"})
 public class CommandBge2SwaggerApplicationTests {
 	
 	private final Logger log = LoggerFactory.getLogger(CommandBge2SwaggerApplicationTests.class);
@@ -44,13 +46,9 @@ public class CommandBge2SwaggerApplicationTests {
 	public void testGenerator() throws Exception {
 		
 		ArrayList<String> filterList = new ArrayList<String>();
-		//filterList.add("serviceTelcoPath");
-		//filterList.add("serviceAccessPoint");
-		filterList.add("campus");
-		filterList.add("building");
-		filterList.add("room");
-		filterList.add("floor");
-		filterList.add("zone");
+		filterList.add("signalTrace");
+		//filterList.add("campus");
+		//filterList.add("easySearch");
 		//filterList.add("processor");
 		//filterList.add("mainMemory");
 		//filterList.add("hardDisk");
