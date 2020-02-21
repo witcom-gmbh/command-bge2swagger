@@ -33,6 +33,7 @@ import com.fntsoftware.businessgateway.internal.doc.dto.TypeDtoBase;
 import de.witcom.rmdb.bge.generator.SwaggerGenerator;
 import de.witcom.rmdb.bge.mixins.TypeDtoMixIn;
 
+
 @RunWith(SpringRunner.class)
 //@ActiveProfiles("test")
 @SpringBootTest(properties = {"job.autorun.enabled=false"})
@@ -50,27 +51,15 @@ public class CommandBge2SwaggerApplicationTests {
 	@Test
 	public void testGenerator() throws Exception {
 		
-		ArrayList<String> filterList = new ArrayList<String>();
-		//filterList.add("signalTrace");
-		//filterList.add("campus");
-		//filterList.add("easySearch");
-		//filterList.add("processor");
-		//filterList.add("mainMemory");
-		//filterList.add("hardDisk");
-		//filterList.add("custom.ctcdynPostalAddress");
-		
 		swaggerGen.generateEntities(entityList);
 		swaggerGen.generateRestServices();
 		
 		ObjectMapper mapper = new ObjectMapper();
 		mapper.setSerializationInclusion(Include.NON_NULL);
 		File resultFile = new File("/tmp/swagger-bge.json");
+		
 		mapper.writeValue(resultFile, swaggerGen.getSwaggerDef());
-		
 
-		
-		
-		//mapper.writeva
 	}
 	
 

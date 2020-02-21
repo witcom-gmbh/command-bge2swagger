@@ -83,6 +83,11 @@
 		    <artifactId>swagger-core</artifactId>
 		    <version>1.5.12</version>
 		</dependency>
+
+<!-- https://mvnrepository.com/artifact/io.swagger.parser.v3/swagger-parser -->
+<!-- https://mvnrepository.com/artifact/io.swagger.parser.v3/swagger-parser-v3 -->
+		 
+		
 		
 		<dependency>
 		    <groupId>org.hibernate</groupId>

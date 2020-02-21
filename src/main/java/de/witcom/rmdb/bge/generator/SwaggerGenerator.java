@@ -95,6 +95,7 @@ import io.swagger.models.properties.Property;
 import io.swagger.models.properties.RefProperty;
 import io.swagger.models.properties.StringProperty;
 
+
 @Service
 public class SwaggerGenerator {
 
@@ -405,6 +406,10 @@ public class SwaggerGenerator {
 		filteredEntities.forEach(e -> {
 			this.processEntity(e);
 		});
+		
+
+		
+		
 
 
 	}
@@ -1846,35 +1851,6 @@ public class SwaggerGenerator {
 	}
 
 
-	public void setSwaggerDef(Swagger swaggerDef) {
-		this.swaggerDef = swaggerDef;
-	}
-	
-	public interface NodeFilter {
-		
-		boolean apply(JsonNode node);
-
-	}
-	
-	public static class NodeFilteringConsumer implements Consumer<JsonNode> {
-
-		private NodeFilter f;
-
-	    public NodeFilteringConsumer(NodeFilter f) {
-	        this.f = f;
-	    }
-
-	    @Override
-	    public void accept(JsonNode t) {
-	    	f.apply(t);
-	    	/*
-	        if (f.apply(t)){
-	            //Only filtered records reach here
-	            System.out.println("Filter applied on node:" + t);
-	        }*/
-	    }
-
-	}
 
 
 
