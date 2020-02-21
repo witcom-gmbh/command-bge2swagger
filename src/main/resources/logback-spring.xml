@@ -23,7 +23,7 @@
 -->
 
 
-	<logger name="de.witcom" level="debug"/>
+	<logger name="de.witcom" level="info"/>
 
 	
     
