@@ -49,6 +49,7 @@ import com.fntsoftware.businessgateway.internal.doc.dto.ComplexTypeDto;
 import com.fntsoftware.businessgateway.internal.doc.dto.EntityDto;
 import com.fntsoftware.businessgateway.internal.doc.dto.EntityInfoDto;
 import com.fntsoftware.businessgateway.internal.doc.dto.ListTypeDto;
+import com.fntsoftware.businessgateway.internal.doc.dto.MapTypeDto;
 import com.fntsoftware.businessgateway.internal.doc.dto.OperationDto;
 import com.fntsoftware.businessgateway.internal.doc.dto.PossibleValueDto;
 import com.fntsoftware.businessgateway.internal.doc.dto.QueryDto;
@@ -89,6 +90,7 @@ import io.swagger.models.properties.DateProperty;
 import io.swagger.models.properties.DateTimeProperty;
 import io.swagger.models.properties.DecimalProperty;
 import io.swagger.models.properties.IntegerProperty;
+import io.swagger.models.properties.MapProperty;
 import io.swagger.models.properties.Property;
 import io.swagger.models.properties.RefProperty;
 import io.swagger.models.properties.StringProperty;
@@ -645,6 +647,8 @@ public class SwaggerGenerator {
 		tags.add(entity.getId());
 		log.debug("Create Operation {}",operationBaseName);
 		Operation op = createBGEPostOperation(opPath, operation, operationBaseName, tags);
+		op.setDescription(operation.getDescription());
+		op.summary(operation.getName());
 		Path path = new Path();
 		path.setPost(op);
 		this.swaggerDef.getPaths().put(opPath, path);
@@ -721,6 +725,9 @@ public class SwaggerGenerator {
 		tags.add(entity.getId());
 		
 		Operation op = getBaseOperation(queryBaseName,restPath,tags);
+		
+		op.setDescription(query.getDescription());
+		op.summary(query.getName());
 		
 		BodyParameter body = new BodyParameter();
 		body.setRequired(true);
@@ -879,7 +886,8 @@ public class SwaggerGenerator {
 		tags.add(entity.getId());
 		
 		Operation op = getBaseOperation(relationBaseName,restPath,tags);
-		
+		op.setDescription(relation.getDescription());
+		op.summary(relation.getName());
 		BodyParameter body = new BodyParameter();
 		body.setRequired(true);
 		body.setName("body");
@@ -915,6 +923,7 @@ public class SwaggerGenerator {
 		//String operationBaseName = operation.getId() + StringUtils.capitalize(getEntityId(entity));
 
 		Operation op = new Operation();
+		
 		op.setOperationId(bgeOperationBaseName);
 		op.setTags(tags);
 		List<String> contentTypes = new ArrayList<String>();
@@ -1344,7 +1353,15 @@ public class SwaggerGenerator {
 				this.createReferencedDefinition(typeRef);
 			}
 			prop = new ArrayProperty(new RefProperty("#/definitions/" + sanitizeDefId(typeRef.getRef())));
+		break;
+		case "MapTypeDto":
+			//ModelImpl definition = new ModelImpl();
+			//definition.setAdditionalProperties(additionalProperties);
+			prop = new ArrayProperty(new MapProperty());
+			//prop.setItems(new MapProperty());
+		break;			
 		}
+		
 		
 		return prop;
 	}
