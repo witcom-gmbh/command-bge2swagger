@@ -2,5 +2,5 @@ app:
   command:
     base-url: ${CMD_BASE_URL}
   generator:
-    output-dir: ${GENERATOR_OUTPUT_DIR:/tmp}    
+    output: ${GENERATOR_OUTPUT:./bge-swagger.json}    
     

@@ -4,9 +4,14 @@ import java.io.IOException;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -36,6 +41,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonAppend.Attr;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fntsoftware.businessgateway.definition.SimpleTypeDef;
+import com.fntsoftware.businessgateway.definition.TypeDef;
 import com.fntsoftware.businessgateway.generation.webservice.data.ServiceStatusData;
 import com.fntsoftware.businessgateway.internal.doc.dto.AttributeDto;
 import com.fntsoftware.businessgateway.internal.doc.dto.ComplexTypeDto;
@@ -52,6 +58,13 @@ import com.fntsoftware.businessgateway.internal.doc.dto.SystemInfoDto;
 import com.fntsoftware.businessgateway.internal.doc.dto.TypeDto;
 import com.fntsoftware.businessgateway.internal.doc.dto.TypeDtoBase;
 import com.fntsoftware.businessgateway.internal.doc.dto.TypeReferenceDto;
+import com.jayway.jsonpath.Configuration;
+import com.jayway.jsonpath.JsonPath;
+import com.jayway.jsonpath.Option;
+import com.jayway.jsonpath.spi.json.JacksonJsonProvider;
+import com.jayway.jsonpath.spi.json.JsonProvider;
+import com.jayway.jsonpath.spi.mapper.JacksonMappingProvider;
+import com.jayway.jsonpath.spi.mapper.MappingProvider;
 
 import de.witcom.rmdb.bge.Constants;
 import de.witcom.rmdb.bge.mixins.TypeDtoMixIn;
@@ -85,6 +98,10 @@ public class SwaggerGenerator {
 	private final Logger log = LoggerFactory.getLogger(SwaggerGenerator.class);
 
 	private Swagger swaggerDef;
+	
+	private JsonNode bgeTypeDefinition = null;
+	
+	private List<TypeDtoBase> bgeTypes = null;
 
 	protected ObjectMapper mapper;
 	
@@ -327,11 +344,7 @@ public class SwaggerGenerator {
 		TypeDtoBase typeDef;
 		try {
 			typeDef = simpleMapper.readValue(definition.toString(),ComplexTypeDto.class);
-			
-			createTypeDefinition(typeDef.getId().replace(".", ""),typeDef);
-			
-			
-
+			createDefinitionForTypeDto(typeDef.getId().replace(".", ""),typeDef);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -347,81 +360,100 @@ public class SwaggerGenerator {
 		
 	}
 
+	/**
+	 * Generates all entities matching the filter list
+	 * Filter is a case-insensitive list of entity-ids. If filterlist is empty, process all entities
+	 * 
+	 * @param filter
+	 * @throws Exception
+	 */
 	public void generateEntities(List<String> filter) throws Exception{
 
 		//alle Entities
-
-		
 		JsonNode definition = restCall(getBGEDefUri());
-		//ObjectMapper mapper = new ObjectMapper();
-		//mapper.addMixIn(TypeDto.class, TypeDtoMixIn.class);
+		//Store definition
+		this.bgeTypeDefinition = definition.findValue("types");
 		SystemInfoDto dto = mapper.readValue(definition.toString(), SystemInfoDto.class);
-		/*
-		log.debug(dto.getVersion());
-
-		Info info = new Info();
-		info.setTitle("Swagger for Command BGE");
-		info.setDescription("Swagger API for FNT Command Business Gateway");
-		info.setVersion(dto.getVersion());
-
-		swaggerDef.setInfo(info );
-		swaggerDef.setHost(swaggerHost);
-		swaggerDef.setBasePath("/axis/api/rest");
-
-		List<Scheme> schemes = new ArrayList<Scheme>();
-		schemes.add(Scheme.HTTPS);
-		swaggerDef.setSchemes(schemes);
-		*/
-
+		this.bgeTypes= dto.getTypes();
 		List<EntityInfoDto> entities;
+		
+		/*
+		Complex-Types sind unvollstaendig (attribute fehlen)
+		
+		Loesung 1 - "nachladen" und in der liste ersetzen
+		Loesung 2 - detailed view parsen, da gibt es aber probleme mit attribut-property preDecimalPlaces. muesste man versuchen rauszufiltern
+			
+		*/
+		/*
+		JsonNode def = this.restCall(getTypeDefUri(defUrl));
+
+		//Retured Object is missing the type definition - lets suppose these are simple types
+		((ObjectNode) def).put("@type", "simple");
+		*/
 
 		if (filter.isEmpty()){
 			entities = dto.getEntities();
-			//entities = new ArrayList<EntityInfoDto>();
 		} else {
 			entities = dto.getEntities().stream().filter(entity -> {
-				if (filter.contains(entity.getId()))
+				
+				if(filter.stream().anyMatch(entity.getId()::equalsIgnoreCase))
 					return true;
+				
+				//if (filter.contains(entity.getId()))
+				//	return true;
 				return false;
 			}).collect(Collectors.toList());
 		}
 
 		entities.forEach(e -> {
-			log.debug(e.getId());
 			this.processEntity(e);
 		});
 
 
 	}
 
+	/**
+	 * Process single bg-entity
+	 * 
+	 * @param entity
+	 */
 	private void processEntity(EntityInfoDto entity){
 		JsonNode definition;
 		//String entityId = getEntityId(entity);
+		log.debug("Processing entity {}",entity.getId());
 		try {
 			definition = restCall(getEntityDefUri(entity));
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			log.error("Error getting Entity-Definition - {}",e.toString());
+			
+			log.error("Error getting Entity-Definition for enity {} - {}",entity.getId(),e.toString());
 			return;
 		}
 
-		//ObjectMapper mapper = new ObjectMapper();
-		//mapper.addMixIn(TypeDto.class, TypeDtoMixIn.class);
 		EntityDto entityDef;
 		try {
 			entityDef = mapper.readValue(definition.toString(),EntityDto.class);
 			
-			//No special-type handling
-			if (entityDef.getTypes().isEmpty()) {
-				createTypeDefinition(getEntityId(entity)+"Data",entityDef.getAttributes());
-			} else {
-				for (TypeDtoBase typeDef : entityDef.getTypes()) {
-					createTypeDefinition(this.sanitizeDefId(typeDef.getId()),typeDef);
-				}
-				
+			//Create Base Type-Definition
+			if (!entityDef.getAttributes().isEmpty()) {
+				createObjectDefinition(getEntityId(entity)+"Data",entityDef.getAttributes());
 			}
 			
+			//If there are type-definitions, create them
+			if (!entityDef.getTypes().isEmpty()) {
+				for (TypeDtoBase typeDef : entityDef.getTypes()) {
+					//add type to list of generic types
+					boolean contains = this.bgeTypes.stream().anyMatch(x -> x.getId() == typeDef.getId());
+					if (!contains) {
+						log.debug("Adding BGE-Type definition to type-list");
+						this.bgeTypes.add(typeDef);
+					}
+					createDefinitionForTypeDto(this.sanitizeDefId(typeDef.getId()),typeDef);
+				}
+			}
+
+			
 			if (entityDef.getOperations() != null){
+				log.debug("Creating {} operations for {}",entityDef.getOperations().size(),entity.getId());
 				for (OperationDto operation: entityDef.getOperations())
 				{
 					createBGEOperation(entityDef,operation);
@@ -429,6 +461,7 @@ public class SwaggerGenerator {
 			}
 			
 			if (entityDef.getRelations() != null){
+				log.debug("Creating {} relations for {}",entityDef.getRelations().size(),entity.getId());
 				for(RelationDto relation:entityDef.getRelations()){
 					createRelation(entityDef,relation);
 					
@@ -436,20 +469,17 @@ public class SwaggerGenerator {
 			}
 			
 			if (entityDef.getQueries() != null){
+				log.debug("Creating {} queries for {}",entityDef.getQueries().size(),entity.getId());
 				for (QueryDto query:entityDef.getQueries()){
 					createQuery(entityDef,query);
 					
 				}
 			}
 
-
-			//Operations
-
-
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-			log.error("Error mapping Entity-Definition - {}",e.toString());
+			log.error("Error while mapping Entity-Definition - {}",e.toString());
 			return;
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
@@ -457,13 +487,14 @@ public class SwaggerGenerator {
 			return;
 		}
 
-		//entityDef.
-
-
-		//EntityDto
-
 	}
 
+	/**
+	 * Get entity-id from EntityInfoDto. Special handling for custom entities  
+	 *  
+	 * @param entity
+	 * @return
+	 */
 	private String getEntityId(EntityInfoDto entity){
 
 		if (entity.getCustom()!=null){
@@ -473,6 +504,12 @@ public class SwaggerGenerator {
 		return entity.getId();
 	}
 
+	/**
+	 * Get entity-id from EntityDto. Special handling for custom entities  
+	 *  
+	 * @param entity
+	 * @return
+	 */
 	private String getEntityId(EntityDto entity){
 
 		if (entity.getCustom()!=null){
@@ -482,20 +519,26 @@ public class SwaggerGenerator {
 		return entity.getId();
 	}	
 
+	/**
+	 * Get type-definition id from TypeDtoBase
+	 * @param typeDef
+	 * @return
+	 */
 	private String getTypeDefId(TypeDtoBase typeDef){
-
-		/*
-		if (typeDef.getCustom()!=null){
-			return typeDef.getId().substring(Constants.customPrefix.length());
-		}*/
-
 		return typeDef.getId();
 	}	
 	
-	
+	/**
+	 * Creates swagger-path for given entity-operation
+	 * Name for path is Operation-Id + EntityId.
+	 * Swagger-path is tagged with entity-id
+	 * 
+	 * @param entity
+	 * @param operation
+	 * @throws Exception
+	 */
 	private void createBGEOperation(EntityDto entity,OperationDto operation) throws Exception{
-		//attribute
-
+		
 		String operationBaseName = StringUtils.capitalize(operation.getId()) + StringUtils.capitalize(getEntityId(entity));
 		
 		//String pathToRemove = bgeBaseUrl + swaggerDef.getBasePath();
@@ -504,7 +547,7 @@ public class SwaggerGenerator {
 		String opPath = this.getOperationPath(operation.getRest().getService().getUrl());
 		List<String> tags = new ArrayList<String>();
 		tags.add(entity.getId());
-		log.debug("Lege Operation {} an",operationBaseName);
+		log.debug("Create Operation {}",operationBaseName);
 		Operation op = createBGEPostOperation(opPath, operation, operationBaseName, tags);
 		Path path = new Path();
 		path.setPost(op);
@@ -512,16 +555,23 @@ public class SwaggerGenerator {
 
 	}
 	
+	/**
+	 * Creates swagger-path, request & response-objects for given entity-query
+	 * Name for path is EntityId+Query-Id.
+	 * Swagger-path is tagged with entity-id
+	 * 
+	 * @param entity
+	 * @param query
+	 */
 	private void createQuery(EntityDto entity,QueryDto query){
 		
 		String queryBaseName = StringUtils.capitalize(getEntityId(entity))+StringUtils.capitalize(query.getId());
 		log.debug("Lege Query {} an",queryBaseName);
 		try {
 			//Request Typ definieren
-			//createRestrictionTypeDefinition(queryBaseName +Constants.suffixRequestData,query.getAttributes());
-		
+			
 			//ResponseTyp definieren
-			createTypeDefinition(queryBaseName +Constants.suffixResponseData,query.getAttributes()
+			createObjectDefinition(queryBaseName +Constants.suffixResponseData,query.getAttributes()
 				.stream()
 				.filter(attr -> attr.getReturnable())
 				.collect(Collectors.toList()));
@@ -540,7 +590,7 @@ public class SwaggerGenerator {
 			return;
 		}
 		
-		//Query Request Objekt
+		//Query Request Object
 		String requestObjectName = queryBaseName+Constants.suffixRequest;
 		ModelImpl definition = new ModelImpl();
 		definition.setType("object");
@@ -566,8 +616,6 @@ public class SwaggerGenerator {
 		
 		
 		//Path-Objekt erstellen
-		//String pathToRemove = bgeBaseUrl + swaggerDef.getBasePath();
-		//String restPath = query.getRest().getService().getUrl().substring(pathToRemove.length());
 		String restPath = this.getOperationPath(query.getRest().getService().getUrl());
 		List<String> tags = new ArrayList<String>();
 		tags.add(entity.getId());
@@ -592,14 +640,10 @@ public class SwaggerGenerator {
 		path.setPost(op);
 		this.swaggerDef.getPaths().put(restPath, path);		
 		log.debug("REST path {}",restPath);
-		
-		
-		
-		
 	}
 	
 	/**
-	 * Extracts REST-Operation path from BGP-Service
+	 * Extracts REST-Operation path from BG-Service
 	 * FNT-Command < 12 (?) send full URL in Service, FNT >= 12 only the path
 	 * 
 	 * @param url - Service-URL of BGE-Operation
@@ -621,11 +665,17 @@ public class SwaggerGenerator {
 		
 	}
 
-	
+	/**
+	 * Creates relation request, response, path models for given entity and relation
+	 * 
+	 * @param entity
+	 * @param relation
+	 * @throws Exception
+	 */
 	private void createRelation(EntityDto entity,RelationDto relation) throws Exception{
 		
 		String relationBaseName = StringUtils.capitalize(getEntityId(entity))+StringUtils.capitalize(relation.getId());
-		log.debug("Lege Relation {} an",relationBaseName);
+		log.debug("Creating relation {} for entity {}",relationBaseName,entity.getId());
 		
 		//Typ-Definitionen
 		
@@ -646,8 +696,8 @@ public class SwaggerGenerator {
 				EntityDto relEntityDef = mapper.readValue(definition.toString(),EntityDto.class);
 				
 				//TypeDefinition
-				log.debug("Lege related Entity {} an",getEntityId(relEntityDef)+"Data");
-				createTypeDefinition(getEntityId(relEntityDef)+"Data",relEntityDef.getAttributes());
+				log.debug("Create related Entity {} an",getEntityId(relEntityDef)+"Data");
+				createObjectDefinition(getEntityId(relEntityDef)+"Data",relEntityDef.getAttributes());
 				relatedEntities.add(getEntityId(relEntityDef)+"Data");
 				
 				//Type-Definition fuer Entity-Restriction
@@ -667,7 +717,7 @@ public class SwaggerGenerator {
 		
 		//Type-Definition fuer Relations-Attribute
 		//Nomenklatur EntityIdRelationIdRelation
-		createTypeDefinition(relationBaseName+"Relation",relation.getAttributes());
+		createObjectDefinition(relationBaseName+"Relation",relation.getAttributes());
 		//Type-Definition fuer Relations-Attribute-Restriction
 		createRestrictionTypeDefinition(relationBaseName+"RelationRestriction",relation.getAttributes());
 		//Type-Definition fuer Return Relations-Attribute
@@ -736,7 +786,16 @@ public class SwaggerGenerator {
 		
 	}
 
-
+	/**
+	 * Creates swagger-operation 
+	 * 
+	 * @param pathName
+	 * @param bgeOperation
+	 * @param bgeOperationBaseName
+	 * @param tags
+	 * @return
+	 * @throws Exception
+	 */
 	private Operation createBGEPostOperation(String pathName,OperationDto bgeOperation,String bgeOperationBaseName,List<String> tags) throws Exception{
 
 		//String operationBaseName = operation.getId() + StringUtils.capitalize(getEntityId(entity));
@@ -797,7 +856,7 @@ public class SwaggerGenerator {
 		//log.debug("Creating request definition {}",requestDefinition);
 		if(!requestParams.isEmpty()){
 			try {
-				createTypeDefinition(requestDefinition,requestParams);
+				createObjectDefinition(requestDefinition,requestParams);
 			} catch (Exception e) {
 				log.error("Error creating request attributes for operation {} : {}",bgeOperation.getId(),e.getMessage());
 				throw new Exception();
@@ -810,11 +869,11 @@ public class SwaggerGenerator {
 		if (bgeOperation.getSubOperations() != null){
 			//requestDefinition = bgeOperationBaseName+Constants.suffixRequestData;
 			for (SubOperationDto subOp : bgeOperation.getSubOperations()){
-				log.debug("Lege Sub-Operation {} / {} an",bgeOperationBaseName,subOp.getId());
+				log.debug("Create sub-operation {} / {} ",bgeOperationBaseName,subOp.getId());
 				//Request Definitionen
 				if(!subOp.getAttributes().isEmpty()){
 					String subOpRequestDefinition = bgeOperationBaseName+ StringUtils.capitalize(subOp.getId()) + Constants.suffixRequestData;
-					createTypeDefinition(subOpRequestDefinition,subOp.getAttributes());
+					createObjectDefinition(subOpRequestDefinition,subOp.getAttributes());
 
 					switch(subOp.getCardinality()){
 					case "1":
@@ -841,7 +900,7 @@ public class SwaggerGenerator {
 
 						break;
 					default:	
-						log.error("Kardinalitaet {} unbekannt",subOp.getCardinality());
+						log.error("Cardinality {} unknown",subOp.getCardinality());
 						throw new Exception();
 					}
 					createBodyParam = true;
@@ -878,7 +937,7 @@ public class SwaggerGenerator {
 			log.debug("Creating response definition {}",responseDefinition);
 			//log.debug("Creating response definition for operation {}, entity {}",operation.getId(),StringUtils.capitalize(getEntityId(entity)));
 			try {
-				createTypeDefinition(responseDefinition,bgeOperation.getReturnAttributes());
+				createObjectDefinition(responseDefinition,bgeOperation.getReturnAttributes());
 			} catch (Exception e) {
 				log.error("Error creating response attributes for operation {} : {}",bgeOperation.getId(),e.getMessage());
 				throw new Exception();
@@ -890,13 +949,13 @@ public class SwaggerGenerator {
 		response.setSchema(new RefProperty("#/definitions/" + bgeOperationBaseName+Constants.suffixResponse));
 		op.addResponse("200", response);
 
-
 		return op;
 
 
 	}
 
 	/**
+	 * Creates response-object for response which is not wrapped into an array
 	 * @param name
 	 * @param responseDefinition
 	 */
@@ -906,6 +965,7 @@ public class SwaggerGenerator {
 	}
 
 	/**
+	 * creates response-object for response. Response can be wrapped into an array
 	 * @param name
 	 * @param responseDefinition
 	 * @param isArray
@@ -931,6 +991,8 @@ public class SwaggerGenerator {
 	}
 	
 	/**
+	 * Creates basic swagger-opertion
+	 * 
 	 * @param opName
 	 * @param restPath
 	 * @param tags
@@ -973,12 +1035,23 @@ public class SwaggerGenerator {
 		return op;
 	}
 	
+	/**
+	 * Creates an array-model containing strings
+	 * @param name
+	 */
 	private void createArrayOfStringTypeDefinition(String name){
 		ArrayModel definition = new ArrayModel();
 		definition.setItems(new StringProperty());
 		this.swaggerDef.addDefinition(name, definition);
 	}
 	
+	/**
+	 * Builds swagger type-definition for query-restrictions
+	 * 
+	 * @param name
+	 * @param attributes
+	 * @throws Exception
+	 */
 	private void createRestrictionTypeDefinition(String name,List<AttributeDto> attributes) throws Exception{
 		ModelImpl definition = new ModelImpl();
 		definition.setType("object");
@@ -1000,8 +1073,7 @@ public class SwaggerGenerator {
 					props.put(attr.getId(),new ArrayProperty(mapDataTypeToRestrictionProperty("STRING")));
 				break;
 				case "TypeReferenceDto":
-					//log.debug("Reference to {}",attr.getType().asReference().getRef());
-					//props.put(attr.getId(),mapTypeReferenceToProperty(attr));
+					// should use this mapTypeReferenceToProperty, which is not working perfect
 					props.put(attr.getId(),mapDataTypeToRestrictionProperty("STRING"));
 				break;	
 				default:
@@ -1016,7 +1088,7 @@ public class SwaggerGenerator {
 	}
 
 	/**
-	 * Maps BGE Attribute to swagger-property
+	 * Maps variou BGE Attribute to swagger-property
 	 * 
 	 * @param attribute
 	 * @return
@@ -1026,15 +1098,28 @@ public class SwaggerGenerator {
 		
 		Property prop = null;
 		
+		//simple property
 		if (attribute.getDataType()!=null){
 			prop = this.mapDataTypeToProperty(attribute.getDataType());
+			return prop;
 		}
 		
+		//type-definition
 		if (attribute.getType()!=null){
 			switch (attribute.getType().getClass().getSimpleName()){
 			case "TypeReferenceDto":
+				
+				//this.mapTypeReferenceToProperty(attribute);
+				TypeReferenceDto typeRef = (TypeReferenceDto) attribute.getType();
+								
+				if(!this.swaggerDef.getDefinitions().containsKey(sanitizeDefId(typeRef.getRef()))){
+					log.debug("Referenced definition {} not present yet",typeRef.getRef());
+					this.createReferencedDefinition(typeRef);
+				}
+				prop = new ArrayProperty(new RefProperty("#/definitions/" + sanitizeDefId(typeRef.getRef())));
+				
 				//log.debug("Reference to {}",attribute.getType().asReference().getRef());
-				prop = new StringProperty();
+				//prop = new StringProperty();
 			break;	
 			case "ListTypeDto":
 				ListTypeDto dto = (ListTypeDto) attribute.getType();
@@ -1055,22 +1140,18 @@ public class SwaggerGenerator {
 	 * @param bgeTypeDef
 	 * @throws Exception
 	 */
-	private void createTypeDefinition(String name,TypeDtoBase bgeTypeDef) throws Exception{
+	private void createDefinitionForTypeDto(String name,TypeDtoBase bgeTypeDef) throws Exception{
 
 		switch (bgeTypeDef.getClass().getSimpleName()){
 		case "ComplexTypeDto":
 			ComplexTypeDto complexType = (ComplexTypeDto) bgeTypeDef;
 			//log.debug("Complex Type Definition {}",name);
-			createTypeDefinition(name,complexType.getAttributes());
+			createObjectDefinition(name,complexType.getAttributes());
 		break;
 		case "SimpleTypeDto":
 			SimpleTypeDto simpleType = (SimpleTypeDto) bgeTypeDef;
 			//log.debug("Simple Type Definition {}",name);
-			
-			ModelImpl definition = new ModelImpl();
-			definition.setType("string");
-			definition.setTitle(name);
-			this.swaggerDef.getDefinitions().put(name, definition);
+			createStringDefinition(name,simpleType);
 
 		break;
 		default:
@@ -1078,17 +1159,36 @@ public class SwaggerGenerator {
 		}
 		
 	}
+	
+	public void createStringDefinition(String name,SimpleTypeDto type) {
+		
+		ModelImpl definition = new ModelImpl();
+		definition.setType("string");
+		definition.setTitle(name);
+		
+		List<String> values = type.getPossibleValues()
+				.stream()
+				.map( m -> m.getValue())
+				.collect(Collectors.toList());
+		definition.setEnum(values);
+		definition.setDefaultValue(type.getDefaultValue());
+		definition.setDescription(type.getDescription());
+		this.swaggerDef.getDefinitions().put(name, definition);
+		
+		log.debug("StringDefinition {} has been created",name);
+		
+	}
 
 	/**
-	 * Create Swagger-TypeDefinition for BGE-Type-Definitions
+	 * Create Swagger-TypeDefinition for Complex BGE-Type-Definitions
 	 * 
 	 * @param name - name of the swagger-type-def
 	 * @param attributes - swagger-properties
 	 * @throws Exception
 	 */
-	private void createTypeDefinition(String name,List<AttributeDto> attributes) throws Exception{
+	private void createObjectDefinition(String name,List<AttributeDto> attributes) throws Exception{
 		ModelImpl definition = new ModelImpl();
-		log.debug("Create type definition for {}",name);
+		//log.debug("Create type definition for {}",name);
 		definition.setType("object");
 		Map<String, Property> props = new HashMap<String, Property>();
 		Property prop;
@@ -1098,7 +1198,9 @@ public class SwaggerGenerator {
 		}
 		definition.setProperties(props);
 		definition.setTitle(name);
+		
 		this.swaggerDef.getDefinitions().put(name, definition);
+		log.debug("Object-Definition {} has been created",name);
 	}
 	
 	/**
@@ -1125,34 +1227,80 @@ public class SwaggerGenerator {
 		
 		return prop;
 	}
+
 	
+	private void createReferencedDefinition(TypeReferenceDto typeRef) {
+		log.debug("Get BGE-Definition for {}",typeRef.getRef());
+		log.debug("Anzahl types {}",this.bgeTypes.size());
+		
+		//this.bgeTypes.forEach(a -> log.debug("{} vs {}",a.getId(),typeRef.getRef()));
+		
+		if (!this.bgeTypes.stream().anyMatch(t -> t.getId().equals(typeRef.getRef()))) {
+			log.error("No BGE-Type-Definition found for {}",typeRef.getRef());
+			return;
+		}
+		String defName = this.sanitizeDefId(typeRef.getRef());
+		
+		TypeDtoBase bgeType = this.bgeTypes.stream().filter(t -> t.getId().equals(typeRef.getRef())).findFirst().get();
+		log.debug("Create Swagger-Definition for {}",typeRef.getRef());
+		try {
+			createDefinitionForTypeDto(defName,bgeType);
+		} catch (Exception creatingException) {
+			log.error("Unable to create Swagger-Definition {}",creatingException.toString());
+			creatingException.printStackTrace();
+			
+		
+		}
+		
+	}
 	/**
 	 * Maps TypeReference-Attribute to property. Possible values are mapped to ENUM-values
-	 * Todo #1 : BGE-Definition does not send back @type - no chance to differentiate the different types, except parsing JSON manually
-	 * ToDo #2 : Cache referenced types to speed up the mapping
 	 * 
 	 * @param attr
 	 * @return swagger string-property
 	 */
 	private Property mapTypeReferenceToProperty(AttributeDto attr) {
-		StringProperty prop = new StringProperty();
-		String defUrl = attr.getType().asReference().getRest().getUrl();
-		//log.debug(defUrl);
+		
+		//this.bgeDefinition.find
+		//Get Type from definition
+		if (!attr.getType().isReference()){
+			log.warn("{} is not a reference - fall back to plain string",attr.getId());
+			return new StringProperty();
+		}
+		log.debug("Map Reference to {}",attr.getType().asReference().getRef());
+		JsonNode res = JsonPath.parse(this.bgeTypeDefinition.toString()).read("$.[?(@.id=='"+attr.getType().asReference().getRef()+"')]", JsonNode.class);
+		
+		if (res.size()!=1) {
+			log.warn("Looking up TypeDefinition for {} returned {} results - expecting 1. Falling back to plain String-Type",attr.getType().asReference().getRef(),res.size());
+			return new StringProperty();
+			
+		}
+		
+		StringProperty prop;
 		try {
-			JsonNode def = this.restCall(getTypeDefUri(defUrl));
-
-			//Retured Object is missing the type definition - lets suppose these are simple types
-			((ObjectNode) def).put("@type", "simple");
+			TypeDto bgeType = mapper.readValue(res.get(0).toString(), TypeDto.class);
 			
-			SimpleTypeDto typeDef = mapper.readValue(def.toString(),SimpleTypeDto.class);
-			List<String> values = typeDef.getPossibleValues()
-					.stream()
-					.map( m -> m.getValue())
-					.collect(Collectors.toList());
+			//log.debug(bgeType.getClass().getSimpleName());
+			switch (bgeType.getClass().getSimpleName()){
+			case "SimpleTypeDto":
+				SimpleTypeDto simpleType = (SimpleTypeDto) bgeType;
+				List<String> values = simpleType.getPossibleValues()
+						.stream()
+						.map( m -> m.getValue())
+						.collect(Collectors.toList());
+				
+				prop =  new StringProperty();
+				prop.setEnum(values);
+				prop.setDefault(simpleType.getDefaultValue());
+			break;
+			default:
+				log.warn("No type handling for {} - falling back to String-Type",bgeType.getClass().getSimpleName());
+				prop = new StringProperty();
+			}
 			
-			prop.setEnum(values);
-		} catch (Exception e) {
-			log.error("Unable to get Type-Definition {}",e.toString());
+		} catch (IOException mappingException) {
+			log.error("Unable to get Type-Definition {}",mappingException.toString());
+			return new StringProperty();
 		}
 		
 		return prop;
@@ -1191,6 +1339,12 @@ public class SwaggerGenerator {
 		return prop;
 	}
 	
+	/**
+	 * Maps BGE-Datatypes used in restrictions to swagger models
+	 * @param datatype
+	 * @return
+	 * @throws Exception
+	 */
 	private Property mapDataTypeToRestrictionProperty(String datatype) throws Exception{
 		switch (datatype){
 		case "STRING":
@@ -1227,6 +1381,13 @@ public class SwaggerGenerator {
 	}	
 
 
+	/**
+	 * Get entity and type-definitions from command rest-api
+	 * 
+	 * @param uriComponents
+	 * @return
+	 * @throws Exception
+	 */
 	private JsonNode restCall(UriComponents uriComponents) throws Exception{
 
 		RestTemplate restTemplate = new RestTemplate();
@@ -1282,25 +1443,20 @@ public class SwaggerGenerator {
 		} else {
 			throw new Exception("REST - Query Exception: No Response-Body");
 		}
-
-		//log.debug(definition.toString());
-
+		
 		return definition;
 	}
 	
 	
 	private String sanitizeDefId(String id) {
-		
 		return id.replace(".", "");
-		
 	}
 
-
-	
 	private UriComponents getBGEDefUri(){
 
 		return UriComponentsBuilder
 				.fromUriString(bgeBaseUrl +Constants.bgeDefPath)
+				//.queryParam("detailed", "true")
 				.build()
 				.encode();
 	}
@@ -1370,16 +1526,45 @@ public class SwaggerGenerator {
 		
 	}
 	
+	/**
+	 * Initilizes generator with a swagger-base model plus generic operations
+	 * 
+	 * @throws Exception
+	 */
 	@PostConstruct
 	public void initSwaggerGenerator() throws Exception{
 		log.debug("Init generator");
+		
+		//configure JsonPath
+		Configuration.setDefaults(new Configuration.Defaults() {
+
+		    private final JsonProvider jsonProvider = new JacksonJsonProvider();
+		    private final MappingProvider mappingProvider = new JacksonMappingProvider();
+
+		    @Override
+		    public JsonProvider jsonProvider() {
+		        return jsonProvider;
+		    }
+
+		    @Override
+		    public MappingProvider mappingProvider() {
+		        return mappingProvider;
+		    }
+
+		    @Override
+		    public Set<Option> options() {
+		        return EnumSet.noneOf(Option.class);
+		    }
+		});
+
+		//Init Swagger
+		
 		this.swaggerDef = new Swagger();
 		
 		List<Scheme> schemes = new ArrayList<Scheme>();
 		
 		swaggerDef.setDefinitions(new HashMap<String,Model>());
 		swaggerDef.setPaths(new HashMap<String,Path>());
-		
 		
 		URL url = new URL(this.bgeBaseUrl);
 		this.swaggerHost = url.getAuthority();
@@ -1553,16 +1738,6 @@ public class SwaggerGenerator {
 		this.swaggerDef.getPaths().put(restPath, path);
 		
 		
-		//Logout
-		/*
-		definition = new ModelImpl();
-		definition.setType("object");
-		definition.setTitle("BaseResponse");
-		props = new HashMap<String, Property>();
-		props.put("status", new RefProperty("#/definitions/ServiceStatusData"));		
-		definition.setProperties(props);
-		this.swaggerDef.getDefinitions().put("BaseResponse", definition);
-		*/
 		//Path-Objekt erstellen
 		restPath = "/api/rest/businessGateway/logout";
 		tags = new ArrayList<String>();
@@ -1576,13 +1751,6 @@ public class SwaggerGenerator {
 		path.setPost(op);
 		this.swaggerDef.getPaths().put(restPath, path);		
 		
-		//generate generic-types
-		/*
-		generateTypes(Stream.of("objectAttribute")
-			      .collect(Collectors.toList()));
-		*/
-		
-		//swaggerDef.addDefinition("ServiceStatusData", definition);
 	}
 
 
@@ -1594,6 +1762,33 @@ public class SwaggerGenerator {
 	public void setSwaggerDef(Swagger swaggerDef) {
 		this.swaggerDef = swaggerDef;
 	}
+	
+	public interface NodeFilter {
+		
+		boolean apply(JsonNode node);
+
+	}
+	
+	public static class NodeFilteringConsumer implements Consumer<JsonNode> {
+
+		private NodeFilter f;
+
+	    public NodeFilteringConsumer(NodeFilter f) {
+	        this.f = f;
+	    }
+
+	    @Override
+	    public void accept(JsonNode t) {
+	    	f.apply(t);
+	    	/*
+	        if (f.apply(t)){
+	            //Only filtered records reach here
+	            System.out.println("Filter applied on node:" + t);
+	        }*/
+	    }
+
+	}
+
 
 
 }
