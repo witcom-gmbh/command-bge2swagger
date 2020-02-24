@@ -1241,7 +1241,7 @@ public class SwaggerGenerator {
 					log.debug("Referenced definition {} not present in swagger model yet",typeRef.getRef());
 					this.createReferencedDefinition(typeRef);
 				}
-				prop = new ArrayProperty(new RefProperty("#/definitions/" + sanitizeDefId(typeRef.getRef())));
+				prop = new RefProperty("#/definitions/" + sanitizeDefId(typeRef.getRef()));
 			break;	
 			case "ListTypeDto":
 				ListTypeDto dto = (ListTypeDto) attribute.getType();

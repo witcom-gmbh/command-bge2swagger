@@ -44,15 +44,17 @@ public class CommandBge2SwaggerApplicationTests {
 	@Inject
 	SwaggerGenerator swaggerGen;
 	
+	@Autowired()
+	@Qualifier("entitiesToGenerate")
 	List<String> entityList;
 	
 	@Test
-	@Ignore
 	public void testGenerator() throws Exception {
 		
+		if (entityList.isEmpty()) {
+			entityList.add("chassis");
+		}
 		
-		entityList = new ArrayList<String>();
-		entityList.add("easysearch");
 		swaggerGen.generateEntities(entityList);
 		swaggerGen.generateRestServices();
 		
