@@ -44,19 +44,21 @@ public class CommandBge2SwaggerApplicationTests {
 	@Inject
 	SwaggerGenerator swaggerGen;
 	
-	@Autowired()
-	@Qualifier("entitiesToGenerate")
 	List<String> entityList;
 	
 	@Test
+	@Ignore
 	public void testGenerator() throws Exception {
 		
+		
+		entityList = new ArrayList<String>();
+		entityList.add("easysearch");
 		swaggerGen.generateEntities(entityList);
 		swaggerGen.generateRestServices();
 		
 		ObjectMapper mapper = new ObjectMapper();
 		mapper.setSerializationInclusion(Include.NON_NULL);
-		File resultFile = new File("/tmp/swagger-bge.json");
+		File resultFile = new File("/tmp/swagger-test-bge.json");
 		
 		mapper.writeValue(resultFile, swaggerGen.getSwaggerDef());
 

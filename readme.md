@@ -36,5 +36,5 @@ ENTITY_LIST - optional comma-separated list of entities to generate, defaults to
 
 WiTCOM best practice
 
-easysearch,campus,building,room,floor,zone,custom.ctcdynPostalAddress,chassis,deviceall,masterdevice,module,passivemodule,switchcabinet,warehouse,organisation,person,bearer,logicalport,serviceTelcoPath,serviceTelcoUnroutedPath,serviceTelcoMultipoint,serviceTelcoPointToPoint,serviceTelcoUnroutedMultipoint,serviceTypeDefinition
+> easysearch,campus,building,room,floor,zone,custom.ctcdynPostalAddress,chassis,deviceall,masterdevice,module,passivemodule,switchcabinet,warehouse,organisation,person,bearer,logicalport,serviceTelcoPath,serviceTelcoUnroutedPath,serviceTelcoMultipoint,serviceTelcoPointToPoint,serviceTelcoUnroutedMultipoint,serviceTypeDefinition,ipv4Address,ipv4Network,ipv6Address,ipv6Network,ipvNetwork,ipAddress,interface
 		
