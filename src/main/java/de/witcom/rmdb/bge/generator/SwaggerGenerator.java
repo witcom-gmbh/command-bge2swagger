@@ -1,6 +1,7 @@
 package de.witcom.rmdb.bge.generator;
 
 import java.io.IOException;
+import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -14,6 +15,7 @@ import javax.annotation.PostConstruct;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -77,8 +79,10 @@ public class SwaggerGenerator {
 	private Swagger swaggerDef;
 
 	protected ObjectMapper mapper;
-	protected String swaggerHost = "rmdb.workspace.witcom.de";
-	protected String bgeBaseUrl = "https://" + swaggerHost;
+	protected String swaggerHost;
+	
+	@Value("${app.command.base-url}")
+	protected String bgeBaseUrl;
 
 	public void generateEntities() throws Exception{
 		this.generateEntities(new ArrayList<String>());
@@ -1085,9 +1089,23 @@ public class SwaggerGenerator {
 		swaggerDef.setHost(swaggerHost);
 		//swaggerDef.setBasePath("/axis/api/rest");
 		swaggerDef.setBasePath("/axis");
+		
+		URL url = new URL(this.bgeBaseUrl);
+		this.swaggerHost = url.getAuthority();
+		
+		log.debug(this.swaggerHost);
 
 		List<Scheme> schemes = new ArrayList<Scheme>();
 		schemes.add(Scheme.HTTPS);
+
+		if (url.getProtocol().toLowerCase().equals("https")) {
+			schemes.add(Scheme.HTTPS);
+		} else if (url.getProtocol().toLowerCase().equals("http")) {
+			schemes.add(Scheme.HTTP);
+		} else {
+			log.warn("Unknown protocol {}",url.getProtocol());
+		}
+		
 		swaggerDef.setSchemes(schemes);
 
 		//generische erzeugen

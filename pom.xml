@@ -5,7 +5,7 @@
 
 	<groupId>de.witcom</groupId>
 	<artifactId>bge2swagger</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>CMD-10-0.0.1</version>
 	<packaging>jar</packaging>
 
 	<name>Command-BGE2SWAGGER</name>
@@ -99,6 +99,17 @@
 			</plugin>
 		</plugins>
 	</build>
+
+	<distributionManagement>
+		<snapshotRepository>
+			<id>nexus-snapshots</id>
+			<url>https://nexus.dev.witcom.services/repository/maven-snapshots/</url>
+		</snapshotRepository>
+		<repository>
+			<id>nexus-releases</id>
+			<url>https://nexus.dev.witcom.services/repository/maven-releases/</url>
+		</repository>
+	</distributionManagement>
 
 
 </project>

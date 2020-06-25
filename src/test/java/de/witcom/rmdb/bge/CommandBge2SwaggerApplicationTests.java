@@ -41,6 +41,7 @@ public class CommandBge2SwaggerApplicationTests {
 	
 	
 	@Test
+	@Ignore
 	public void testGenerator() throws Exception {
 		
 		ArrayList<String> filterList = new ArrayList<String>();
@@ -56,9 +57,6 @@ public class CommandBge2SwaggerApplicationTests {
 		mapper.setSerializationInclusion(Include.NON_NULL);
 		File resultFile = new File("/tmp/swagger-bge.json");
 		mapper.writeValue(resultFile, swaggerGen.getSwaggerDef());
-		
-
-		
 		
 		//mapper.writeva
 	}
