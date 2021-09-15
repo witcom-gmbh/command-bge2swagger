@@ -145,5 +145,16 @@
 		</repository>
 	</distributionManagement>
 
+	<distributionManagement>
+		<snapshotRepository>
+			<id>nexus-snapshots</id>
+			<url>https://nexus.dev.witcom.services/repository/maven-snapshots/</url>
+		</snapshotRepository>
+		<repository>
+			<id>nexus-releases</id>
+			<url>https://nexus.dev.witcom.services/repository/maven-releases/</url>
+		</repository>
+	</distributionManagement>
+
 
 </project>

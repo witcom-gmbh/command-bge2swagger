@@ -110,7 +110,6 @@ public class SwaggerGenerator {
 	private List<TypeDtoBase> bgeTypes = null;
 
 	protected ObjectMapper mapper;
-	
 	protected String swaggerHost;
 	
 	@Value("${app.command.base-url}")
@@ -1730,6 +1729,12 @@ public class SwaggerGenerator {
 		swaggerDef.setHost(swaggerHost);
 		//swaggerDef.setBasePath("/axis/api/rest");
 		swaggerDef.setBasePath("/axis");
+		
+		URL url = new URL(this.bgeBaseUrl);
+		this.swaggerHost = url.getAuthority();
+		
+		log.debug(this.swaggerHost);
+
 
 		//schemes.add(Scheme.HTTPS);
 		

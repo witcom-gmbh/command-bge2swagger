@@ -49,6 +49,7 @@ public class CommandBge2SwaggerApplicationTests {
 	List<String> entityList;
 	
 	@Test
+	@Ignore
 	public void testGenerator() throws Exception {
 		
 		if (entityList.isEmpty()) {
