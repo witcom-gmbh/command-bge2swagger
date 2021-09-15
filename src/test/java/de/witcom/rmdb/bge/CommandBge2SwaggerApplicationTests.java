@@ -14,7 +14,10 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -30,8 +33,10 @@ import com.fntsoftware.businessgateway.internal.doc.dto.TypeDtoBase;
 import de.witcom.rmdb.bge.generator.SwaggerGenerator;
 import de.witcom.rmdb.bge.mixins.TypeDtoMixIn;
 
+
 @RunWith(SpringRunner.class)
-@SpringBootTest
+//@ActiveProfiles("test")
+@SpringBootTest(properties = {"job.autorun.enabled=false"})
 public class CommandBge2SwaggerApplicationTests {
 	
 	private final Logger log = LoggerFactory.getLogger(CommandBge2SwaggerApplicationTests.class);
@@ -39,26 +44,27 @@ public class CommandBge2SwaggerApplicationTests {
 	@Inject
 	SwaggerGenerator swaggerGen;
 	
+	@Autowired()
+	@Qualifier("entitiesToGenerate")
+	List<String> entityList;
 	
 	@Test
 	@Ignore
 	public void testGenerator() throws Exception {
 		
-		ArrayList<String> filterList = new ArrayList<String>();
-		//filterList.add("serviceTelcoPath");
-		//filterList.add("serviceAccessPoint");
-		//filterList.add("virtualServer");
-		//filterList.add("custom.ctcdynPostalAddress");
+		if (entityList.isEmpty()) {
+			entityList.add("virtualserver");
+		}
 		
-		swaggerGen.generateEntities(filterList);
+		swaggerGen.generateEntities(entityList);
 		swaggerGen.generateRestServices();
 		
 		ObjectMapper mapper = new ObjectMapper();
 		mapper.setSerializationInclusion(Include.NON_NULL);
-		File resultFile = new File("/tmp/swagger-bge.json");
-		mapper.writeValue(resultFile, swaggerGen.getSwaggerDef());
+		File resultFile = new File("/tmp/swagger-test-bge.json");
 		
-		//mapper.writeva
+		mapper.writeValue(resultFile, swaggerGen.getSwaggerDef());
+
 	}
 	
 

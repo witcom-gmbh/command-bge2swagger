@@ -10,6 +10,8 @@ public final class Constants {
 	public static final String suffixResponseData = "ResponseData";
 	public static final String suffixResponse = "Response";
 	public static final String suffixRequest = "Request";
+	public static final String typeDefPath = "/axis/api/rest/definition/type/{entity}";
+	public static final String customTypeDefPath = "/axis/api/rest/definition/type/custom/{entity}";
 	
 	
 

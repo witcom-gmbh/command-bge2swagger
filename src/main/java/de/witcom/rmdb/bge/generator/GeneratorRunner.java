@@ -37,6 +37,8 @@ public class GeneratorRunner implements CommandLineRunner {
 
 	@Override
 	public void run(String... arg0)  {
+
+		// TODO Auto-generated method stub
 		log.debug("Ready to run");
 		
 		try {
@@ -53,5 +55,6 @@ public class GeneratorRunner implements CommandLineRunner {
 		}
 	}
 	
+
 
 }
