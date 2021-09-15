@@ -116,6 +116,8 @@ public class SwaggerGenerator {
 	@Value("${app.command.base-url}")
 	protected String bgeBaseUrl;
 
+	protected Map<String, String> specialCharReplacements = new HashMap<String, String>();
+
 	public void generateEntities() throws Exception{
 		this.generateEntities(new ArrayList<String>());
 	}
@@ -1294,12 +1296,20 @@ public class SwaggerGenerator {
 		definition.setType("string");
 		definition.setTitle(name);
 		
+		
 		if (type.getPossibleValues()!= null) {
 			List<String> values = type.getPossibleValues()
 					.stream()
 					.map( m -> m.getValue())
 					.collect(Collectors.toList());
+
+			List<String> sanitizedValues = type.getPossibleValues()
+					.stream()
+					.map( m -> m.getValue())
+					.map( m -> this.getEnumVarName(m))
+					.collect(Collectors.toList());					
 			definition.setEnum(values);
+			definition.setVendorExtension("x-enum-varnames", sanitizedValues);
 		}
 		definition.setDefaultValue(type.getDefaultValue());
 		definition.setDescription(type.getDescription());
@@ -1308,6 +1318,25 @@ public class SwaggerGenerator {
 		log.debug("StringDefinition {} has been created",name);
 		
 	}
+
+
+	/**
+	 * Returns sanitized - without special characters - enum varname
+	 * 
+	 * @param name
+	 * @return
+	 */
+	private String getEnumVarName(String name){
+
+
+		if (name.chars().anyMatch(character -> specialCharReplacements.containsKey("" + ((char) character)))) {
+            return de.witcom.rmdb.bge.generator.StringUtils.escape(name, specialCharReplacements, null, null);
+        }
+
+		return name;
+	}
+
+    
 
 	/**
 	 * Create OAS model of type object for Complex BGE-Type-Definitions
@@ -1649,6 +1678,8 @@ public class SwaggerGenerator {
 		    }
 		});
 
+		initalizeSpecialCharacterMapping();
+
 		//Init Swagger
 		
 		this.swaggerDef = new Swagger();
@@ -1850,7 +1881,45 @@ public class SwaggerGenerator {
 		return swaggerDef;
 	}
 
+	protected void initalizeSpecialCharacterMapping() {
+        // Initialize special characters
+        specialCharReplacements.put("$", "Dollar");
+        specialCharReplacements.put("^", "Caret");
+        specialCharReplacements.put("|", "Pipe");
+        specialCharReplacements.put("=", "Equal");
+        specialCharReplacements.put("*", "Star");
+        specialCharReplacements.put("-", "Minus");
+        specialCharReplacements.put("&", "Ampersand");
+        specialCharReplacements.put("%", "Percent");
+        specialCharReplacements.put("#", "Hash");
+        specialCharReplacements.put("@", "At");
+        specialCharReplacements.put("!", "Exclamation");
+        specialCharReplacements.put("+", "Plus");
+        specialCharReplacements.put(":", "Colon");
+        specialCharReplacements.put(">", "Greater_Than");
+        specialCharReplacements.put("<", "Less_Than");
+        specialCharReplacements.put(".", "Period");
+        specialCharReplacements.put("_", "Underscore");
+        specialCharReplacements.put("?", "Question_Mark");
+        specialCharReplacements.put(",", "Comma");
+        specialCharReplacements.put("'", "Quote");
+        specialCharReplacements.put("\"", "Double_Quote");
+        specialCharReplacements.put("/", "Slash");
+        specialCharReplacements.put("\\", "Back_Slash");
+        specialCharReplacements.put("(", "Left_Parenthesis");
+        specialCharReplacements.put(")", "Right_Parenthesis");
+        specialCharReplacements.put("{", "Left_Curly_Bracket");
+        specialCharReplacements.put("}", "Right_Curly_Bracket");
+        specialCharReplacements.put("[", "Left_Square_Bracket");
+        specialCharReplacements.put("]", "Right_Square_Bracket");
+        specialCharReplacements.put("~", "Tilde");
+        specialCharReplacements.put("`", "Backtick");
 
+        specialCharReplacements.put("<=", "Less_Than_Or_Equal_To");
+        specialCharReplacements.put(">=", "Greater_Than_Or_Equal_To");
+        specialCharReplacements.put("!=", "Not_Equal");
+		specialCharReplacements.put(" ", "Space");
+    }
 
 
 
