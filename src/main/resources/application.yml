@@ -2,5 +2,7 @@ app:
   command:
     base-url: ${CMD_BASE_URL}
   generator:
-    output: ${GENERATOR_OUTPUT:./bge-swagger.json}    
+    output: ${GENERATOR_OUTPUT:./bge-swagger.json}
+    generate-enums: ${GENERATOR_GENERATE_ENUM:false}    
+
     

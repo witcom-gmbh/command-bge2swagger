@@ -3,5 +3,5 @@ app:
     base-url: ${CMD_BASE_URL}
   generator:
     output-dir: ${GENERATOR_OUTPUT_DIR:/tmp}    
-    
-#:https://rmdb.workspace.witcom.de    
+    generate-enums: ${GENERATOR_GENERATE_ENUM:false}    
+   

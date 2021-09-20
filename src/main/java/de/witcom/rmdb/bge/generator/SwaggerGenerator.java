@@ -115,6 +115,9 @@ public class SwaggerGenerator {
 	@Value("${app.command.base-url}")
 	protected String bgeBaseUrl;
 
+	@Value("#{new Boolean('${app.generator.generate-enums}'.trim())}")
+	protected boolean generateEnums;
+
 	protected Map<String, String> specialCharReplacements = new HashMap<String, String>();
 
 	public void generateEntities() throws Exception{
@@ -1295,21 +1298,23 @@ public class SwaggerGenerator {
 		definition.setType("string");
 		definition.setTitle(name);
 		
-		
-		if (type.getPossibleValues()!= null) {
-			List<String> values = type.getPossibleValues()
-					.stream()
-					.map( m -> m.getValue())
-					.collect(Collectors.toList());
+		if (this.generateEnums){
+			if (type.getPossibleValues()!= null) {
+				List<String> values = type.getPossibleValues()
+						.stream()
+						.map( m -> m.getValue())
+						.collect(Collectors.toList());
 
-			List<String> sanitizedValues = type.getPossibleValues()
-					.stream()
-					.map( m -> m.getValue())
-					.map( m -> this.getEnumVarName(m))
-					.collect(Collectors.toList());					
-			definition.setEnum(values);
-			definition.setVendorExtension("x-enum-varnames", sanitizedValues);
+				List<String> sanitizedValues = type.getPossibleValues()
+						.stream()
+						.map( m -> m.getValue())
+						.map( m -> this.getEnumVarName(m))
+						.collect(Collectors.toList());					
+				definition.setEnum(values);
+				definition.setVendorExtension("x-enum-varnames", sanitizedValues);
+			}
 		}
+		
 		definition.setDefaultValue(type.getDefaultValue());
 		definition.setDescription(type.getDescription());
 		this.swaggerDef.getDefinitions().put(name, definition);
@@ -1700,7 +1705,7 @@ public class SwaggerGenerator {
 		} else {
 			log.warn("Unknown protocol {}",url.getProtocol());
 		}
-		
+
 		swaggerDef.setSchemes(schemes);
 
 		
@@ -1730,7 +1735,7 @@ public class SwaggerGenerator {
 		//swaggerDef.setBasePath("/axis/api/rest");
 		swaggerDef.setBasePath("/axis");
 		
-		URL url = new URL(this.bgeBaseUrl);
+		//URL url = new URL(this.bgeBaseUrl);
 		this.swaggerHost = url.getAuthority();
 		
 		log.debug(this.swaggerHost);
