@@ -7,8 +7,7 @@ branch_whitelist = ["main"]
 skip_ci = "[skip ci]"
 skip_untracked = false
 pre_bump_hooks = [
-    "mvn versions:set -DnewVersion={{version}}",
-    "yq -i '.version=\"{{version}}\" | .appVersion=\"v{{version}}\"' helm/command-source-connector/Chart.yaml"
+    "mvn versions:set -DnewVersion={{version}}"
 ]
 post_bump_hooks = [
     "git push",
