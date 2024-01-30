@@ -148,11 +148,11 @@
 	
 	<distributionManagement>
 		<snapshotRepository>
-			<id>nexus-snapshots</id>
+			<id>maven-snapshots</id>
 			<url>https://reposilite.witcom.services/maven-snapshots/</url>
 		</snapshotRepository>
 		<repository>
-			<id>nexus-releases</id>
+			<id>maven-releases</id>
 			<url>https://reposilite.witcom.services/maven-releases/</url>
 		</repository>
 	</distributionManagement>

@@ -5,12 +5,12 @@
 
   <servers>
     <server>
-      <id>nexus-snapshots</id>
+      <id>maven-snapshots</id>
       <username>NEXUSUSER</username>
       <password>NEXUSPASSWORD</password>
     </server>
     <server>
-      <id>nexus-releases</id>
+      <id>maven-releases</id>
       <username>NEXUSUSER</username>
       <password>NEXUSPASSWORD</password>
     </server>
