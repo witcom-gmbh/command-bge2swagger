@@ -598,14 +598,17 @@ public class SwaggerGenerator {
 	}
 
 	/**
-	 * Get entity-id from EntityInfoDto. Special handling for custom entities  
+	 * Gets base entity-id from EntityInfoDto.
+	 * For custom entieties the "custom." prefix is stripped  
 	 *  
 	 * @param entity
 	 * @return
 	 */
-	private String getEntityId(EntityInfoDto entity){
+	private String getBaseEntityId(EntityInfoDto entity){
 
+		//log.debug(entity.getId());
 		if (entity.getCustom()!=null){
+			//return "Custom" + entity.getId().substring(Constants.customPrefix.length());
 			return entity.getId().substring(Constants.customPrefix.length());
 		}
 
@@ -613,15 +616,18 @@ public class SwaggerGenerator {
 	}
 
 	/**
-	 * Get entity-id from EntityDto. Special handling for custom entities  
+	 * Get entity-id from EntityDto. This EntityId is used for naming of Definitions, operations, etc.
+	 * Custom entities are prefixed with "Custom"
 	 *  
 	 * @param entity
 	 * @return
 	 */
 	private String getEntityId(EntityDto entity){
 
+		//log.debug(entity.getId());
 		if (entity.getCustom()!=null){
-			return entity.getId().substring(Constants.customPrefix.length());
+			return "Custom" + StringUtils.capitalize(entity.getId().substring(Constants.customPrefix.length()));
+			//return entity.getId().substring(Constants.customPrefix.length());
 		}
 
 		return entity.getId();
@@ -654,7 +660,7 @@ public class SwaggerGenerator {
 		//log.debug("base-url {}, rem {}, basepath {}, service {}",bgeBaseUrl,pathToRemove,swaggerDef.getBasePath(),operation.getRest().getService().getUrl());
 		String opPath = this.getOperationPath(operation.getRest().getService().getUrl());
 		List<String> tags = new ArrayList<String>();
-		tags.add(entity.getId());
+		tags.add(getEntityId(entity));
 		log.debug("Create Operation {}",operationBaseName);
 		Operation op = createBGEPostOperation(opPath, operation, operationBaseName, tags);
 		op.setDescription(operation.getDescription());
@@ -732,7 +738,7 @@ public class SwaggerGenerator {
 		//Path-Objekt erstellen
 		String restPath = this.getOperationPath(query.getRest().getService().getUrl());
 		List<String> tags = new ArrayList<String>();
-		tags.add(entity.getId());
+		tags.add(getEntityId(entity));
 		
 		Operation op = getBaseOperation(queryBaseName,restPath,tags);
 		
@@ -893,11 +899,11 @@ public class SwaggerGenerator {
 		//String pathToRemove = bgeBaseUrl + swaggerDef.getBasePath();
 		String restPath = this.getOperationPath(relation.getRest().getService().getUrl());
 		List<String> tags = new ArrayList<String>();
-		tags.add(entity.getId());
+		tags.add(getEntityId(entity));
 		
 		Operation op = getBaseOperation(relationBaseName,restPath,tags);
 		op.setDescription(relation.getDescription());
-		op.summary(relation.getName());
+		op.summary(String.format("Get relations to %s entities",relation.getName()));
 		BodyParameter body = new BodyParameter();
 		body.setRequired(true);
 		body.setName("body");
@@ -1621,7 +1627,7 @@ public class SwaggerGenerator {
 	}
 
 	private UriComponents getEntityDefUri(EntityInfoDto entity){
-		String entityId = getEntityId(entity);
+		String entityId = getBaseEntityId(entity);
 		String uriString;
 		if(entity.getCustom()!=null){
 			uriString = bgeBaseUrl +Constants.customEntityDefPath;
