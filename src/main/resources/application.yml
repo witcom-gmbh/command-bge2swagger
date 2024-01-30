@@ -5,4 +5,7 @@ app:
     output: ${GENERATOR_OUTPUT:./bge-swagger.json}
     generate-enums: ${GENERATOR_GENERATE_ENUM:false}    
 
-    
+logging:
+  level:
+    root: ERROR
+    # de.witcom: DEBUG
