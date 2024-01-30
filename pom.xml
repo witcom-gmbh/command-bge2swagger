@@ -14,14 +14,14 @@
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>2.5.4</version>
+		<version>3.1.7</version>
 		<relativePath /> <!-- lookup parent from repository -->
 	</parent>
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-		<java.version>11</java.version>
+		<java.version>17</java.version>
 		<javax.inject.version>1</javax.inject.version>
 	</properties>
 
@@ -92,8 +92,9 @@
 		<dependency>
 			<groupId>com.fntsoftware</groupId>
 			<artifactId>businessgateway</artifactId>
-			<version>12.10.3</version>
+			<version>13.6.1</version>
 		</dependency>
+
 
 		<dependency>
 			<groupId>com.jayway.jsonpath</groupId>
@@ -122,26 +123,14 @@
 		</plugins>
 	</build>
 	
-
-	<repositories>
-		<repository>
-			<id>witcom-repo</id>
-			<url>https://nexus.dev.witcom.services/repository/maven-releases</url>
-			<snapshots>
-				<enabled>false</enabled>
-			</snapshots>
-		</repository>
-	</repositories>
-
-
 	<distributionManagement>
 		<snapshotRepository>
 			<id>nexus-snapshots</id>
-			<url>https://nexus.dev.witcom.services/repository/maven-snapshots/</url>
+			<url>https://reposilite.witcom.services/maven-snapshots/</url>
 		</snapshotRepository>
 		<repository>
 			<id>nexus-releases</id>
-			<url>https://nexus.dev.witcom.services/repository/maven-releases/</url>
+			<url>https://reposilite.witcom.services/maven-releases/</url>
 		</repository>
 	</distributionManagement>
 

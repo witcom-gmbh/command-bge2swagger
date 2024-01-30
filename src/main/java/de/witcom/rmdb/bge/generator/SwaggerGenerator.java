@@ -17,7 +17,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import javax.annotation.PostConstruct;
+//import javax.annotation.PostConstruct;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -94,6 +94,7 @@ import io.swagger.models.properties.MapProperty;
 import io.swagger.models.properties.Property;
 import io.swagger.models.properties.RefProperty;
 import io.swagger.models.properties.StringProperty;
+import jakarta.annotation.PostConstruct;
 
 
 @Service
@@ -1533,7 +1534,7 @@ public class SwaggerGenerator {
 		try {
 			queryResponse = restTemplate.exchange(uriComponents.toUri(), HttpMethod.GET, entity, String.class);
 		} catch (HttpClientErrorException e) {
-			log.error("Error performing REST-Call: {} - {}",e.getStatusCode().name(),e.getResponseBodyAsString());
+			log.error("Error performing REST-Call: {} - {}",e.getStatusCode().value(),e.getResponseBodyAsString());
 			restTemplate.setMessageConverters(oldConverters);
 			throw new Exception("Entity query");
 		}
