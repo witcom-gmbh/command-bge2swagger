@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## v2.0.0 - 2024-01-30
+#### Bug Fixes
+- Refactors CustomEntities  - (c6cbbd4) - iceman91176
+
+- - -
+
 ## v1.2.0 - 2024-01-30
 #### Features
 - Bump to command 13.x - (8a73c30) - iceman91176
