@@ -14,14 +14,15 @@
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>2.5.4</version>
+		<version>3.1.7</version>
 		<relativePath /> <!-- lookup parent from repository -->
 	</parent>
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-		<java.version>11</java.version>
+		<org.projectlombok.version>1.18.22</org.projectlombok.version>
+		<java.version>17</java.version>
 		<javax.inject.version>1</javax.inject.version>
 	</properties>
 
@@ -63,7 +64,13 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-validation</artifactId>
 			<version>2.5.4</version>
-		  </dependency>		
+		  </dependency>	
+		<dependency>
+		<groupId>org.projectlombok</groupId>
+		<artifactId>lombok</artifactId>
+		<version>${org.projectlombok.version}</version>
+		<scope>provided</scope>
+		</dependency>		  	
 
 		<dependency>
 			<groupId>javax.inject</groupId>
@@ -92,8 +99,9 @@
 		<dependency>
 			<groupId>com.fntsoftware</groupId>
 			<artifactId>businessgateway</artifactId>
-			<version>12.10.3</version>
+			<version>13.6.1</version>
 		</dependency>
+
 
 		<dependency>
 			<groupId>com.jayway.jsonpath</groupId>
@@ -119,31 +127,41 @@
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>3.8.1</version>
+				<configuration>
+					<source>${java.version}</source>
+					<target>${java.version}</target>
+					<annotationProcessorPaths>
+                            <path>
+                                <groupId>org.projectlombok</groupId>
+                                <artifactId>lombok</artifactId>
+                                <version>${org.projectlombok.version}</version>
+                            </path>
+					</annotationProcessorPaths>
+				</configuration>
+			</plugin>			
 		</plugins>
 	</build>
 	
-
-	<repositories>
-		<repository>
-			<id>witcom-repo</id>
-			<url>https://nexus.dev.witcom.services/repository/maven-releases</url>
-			<snapshots>
-				<enabled>false</enabled>
-			</snapshots>
-		</repository>
-	</repositories>
-
-
 	<distributionManagement>
 		<snapshotRepository>
 			<id>nexus-snapshots</id>
-			<url>https://nexus.dev.witcom.services/repository/maven-snapshots/</url>
+			<url>https://reposilite.witcom.services/maven-snapshots/</url>
 		</snapshotRepository>
 		<repository>
 			<id>nexus-releases</id>
-			<url>https://nexus.dev.witcom.services/repository/maven-releases/</url>
+			<url>https://reposilite.witcom.services/maven-releases/</url>
 		</repository>
 	</distributionManagement>
-
+	<repositories>
+		<repository>
+			<id>witcom-central</id>
+			<name>witcom-central</name>
+			<url>https://reposilite.witcom.services/maven-public/</url>
+		</repository>
+	</repositories>
 
 </project>

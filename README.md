@@ -1,4 +1,6 @@
-# OpenAPI Specificatio 2.0 Generator for FNT Command
+# OpenAPI Specification 2.0 Generator for FNT Command
+
+[![Build Status](https://drone-gh-01.witcom.services/api/badges/witcom-gmbh/command-bge2swagger/status.svg?ref=refs/heads/main)](https://drone-gh-01.witcom.services/witcom-gmbh/command-bge2swagger)
 
 Creates OAS 2.0 (fka Swagger-Specs) for FNT-Command Business-Gateway Entities.
 

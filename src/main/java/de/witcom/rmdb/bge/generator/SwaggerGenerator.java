@@ -8,6 +8,7 @@ import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -17,10 +18,8 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import javax.annotation.PostConstruct;
+//import javax.annotation.PostConstruct;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -94,13 +93,13 @@ import io.swagger.models.properties.MapProperty;
 import io.swagger.models.properties.Property;
 import io.swagger.models.properties.RefProperty;
 import io.swagger.models.properties.StringProperty;
+import jakarta.annotation.PostConstruct;
+import lombok.extern.log4j.Log4j2;
 
 
 @Service
+@Log4j2
 public class SwaggerGenerator {
-
-	private final Logger log = LoggerFactory.getLogger(SwaggerGenerator.class);
-
 	private Swagger swaggerDef;
 	
 	private JsonNode bgeTypeDefinition = null;
@@ -108,6 +107,8 @@ public class SwaggerGenerator {
 	private List<EntityInfoDto> bgeEntities = null;
 	private List<EntityDto> bgeEntitiesDetailed = null;
 	private List<TypeDtoBase> bgeTypes = null;
+
+	private HashMap<String,TypeReferenceDto> typeRefsToGenerate = new LinkedHashMap<>();
 
 	protected ObjectMapper mapper;
 	protected String swaggerHost;
@@ -1238,12 +1239,20 @@ public class SwaggerGenerator {
 			case "TypeReferenceDto":
 
 				TypeReferenceDto typeRef = (TypeReferenceDto) attribute.getType();
-				
-				//log.debug("Reference to {}",typeRef.getRef());
-								
 				if(!this.swaggerDef.getDefinitions().containsKey(sanitizeDefId(typeRef.getRef()))){
 					log.debug("Referenced definition {} not present in swagger model yet",typeRef.getRef());
-					this.createReferencedDefinition(typeRef);
+					// we avoid recursion loop we store all type-definitions that have to be created in a hashmap
+					// not present in hashmap ? first time we see the reference
+					if(!this.typeRefsToGenerate.containsKey(typeRef.getRef())){
+						log.debug("Referenced definition {} not present in typeRefsToGenerate list yet",typeRef.getRef());
+						// put the reference to our hashmap
+						this.typeRefsToGenerate.put(typeRef.getRef(), typeRef);
+						// create reference-definition.
+						this.createReferencedDefinition(typeRef);
+					} else {
+						// present in hashmap but not in swgger-definitions. This means that we are in some kind of recursion here
+						log.debug("Referenced definition {} created in the meantime",typeRef.getRef());
+					}
 				}
 				prop = new RefProperty("#/definitions/" + sanitizeDefId(typeRef.getRef()));
 			break;	
@@ -1388,7 +1397,14 @@ public class SwaggerGenerator {
 			
 			if(!this.swaggerDef.getDefinitions().containsKey(sanitizeDefId(typeRef.getRef()))){
 				log.debug("Referenced definition {} not present in swagger model yet",typeRef.getRef());
-				this.createReferencedDefinition(typeRef);
+				if(!this.typeRefsToGenerate.containsKey(typeRef.getRef())){
+					log.debug("Referenced definition {} not present in typeRefsToGenerate list yet",typeRef.getRef());
+					this.typeRefsToGenerate.put(typeRef.getRef(), typeRef);
+					this.createReferencedDefinition(typeRef);
+				}else {
+					log.debug("Referenced definition {} created in the meantime",typeRef.getRef());
+				}
+				//
 			}
 			prop = new ArrayProperty(new RefProperty("#/definitions/" + sanitizeDefId(typeRef.getRef())));
 		break;
@@ -1533,7 +1549,7 @@ public class SwaggerGenerator {
 		try {
 			queryResponse = restTemplate.exchange(uriComponents.toUri(), HttpMethod.GET, entity, String.class);
 		} catch (HttpClientErrorException e) {
-			log.error("Error performing REST-Call: {} - {}",e.getStatusCode().name(),e.getResponseBodyAsString());
+			log.error("Error performing REST-Call: {} - {}",e.getStatusCode().value(),e.getResponseBodyAsString());
 			restTemplate.setMessageConverters(oldConverters);
 			throw new Exception("Entity query");
 		}

@@ -52,9 +52,9 @@ public class CommandBge2SwaggerApplicationTests {
 	//@Ignore
 	public void testGenerator() throws Exception {
 		
-		if (entityList.isEmpty()) {
-			entityList.add("virtualserver");
-		}
+		// if (entityList.isEmpty()) {
+		// 	entityList.add("chassis");
+		// }
 		
 		swaggerGen.generateEntities(entityList);
 		swaggerGen.generateRestServices();
