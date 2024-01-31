@@ -5,6 +5,12 @@ global-variables:
     REPO_PASSWORD:
       from_secret: reposilite-secret-01
     CMD_BASE_URL: https://rmdb.dev.witcom.services
+    REGISTRY:
+      from_secret: artifactory-host-01
+    USERNAME:
+      from_secret: artifactory-user-01
+    PASSWORD:
+      from_secret: artifactory-password-01
     REGISTRY_ORG: witcom
     REGISTRY_ARTIFACT: command-bge2swagger
 
