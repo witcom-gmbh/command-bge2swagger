@@ -3,7 +3,8 @@ app:
     base-url: ${CMD_BASE_URL}
   generator:
     output-dir: ${GENERATOR_OUTPUT_DIR:/tmp}    
-    generate-enums: ${GENERATOR_GENERATE_ENUM:false}    
+    generate-enums: ${GENERATOR_GENERATE_ENUM:false}
+    sessionid-as-queryparam: false
 
 logging:
   level:

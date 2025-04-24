@@ -119,6 +119,9 @@ public class SwaggerGenerator {
 	@Value("#{new Boolean('${app.generator.generate-enums}'.trim())}")
 	protected boolean generateEnums;
 
+	@Value("#{new Boolean('${app.generator.sessionid-as-queryparam}'.trim())}")
+	protected boolean sessionIdAsQueryParam = true;
+
 	protected Map<String, String> specialCharReplacements = new HashMap<String, String>();
 
 	public void generateEntities() throws Exception{
@@ -258,7 +261,10 @@ public class SwaggerGenerator {
 		//Operations
 		//HeadData
 		ArrayList<Parameter> params = new ArrayList<Parameter>();
-		params.add(new QueryParameter().name("sessionid").required(true).type("string").description("Session-ID"));
+		if(this.sessionIdAsQueryParam){
+			params.add(new QueryParameter().name("sessionid").required(true).type("string").description("Session-ID"));
+		}
+		
 		params.add(new QueryParameter().name("planView").required(false).type("boolean").description("plan view"));
 		params.add(new PathParameter().name("ciElid").required(true).type("string"));
 		//Path path = new Path().get(getCIRESTOperation("CiHeadData",params));
@@ -266,7 +272,9 @@ public class SwaggerGenerator {
 		
 		//Data
 		params = new ArrayList<Parameter>();
-		params.add(new QueryParameter().name("sessionid").required(true).type("string").description("Session-ID"));
+		if(this.sessionIdAsQueryParam){
+			params.add(new QueryParameter().name("sessionid").required(true).type("string").description("Session-ID"));
+		}
 		params.add(new QueryParameter().name("baseAttributes").required(false).type("boolean"));
 		params.add(new QueryParameter().name("extendedAttributes").required(false).type("boolean"));
 		params.add(new QueryParameter().name("systemAttributes").required(false).type("boolean"));
@@ -275,7 +283,9 @@ public class SwaggerGenerator {
 		this.swaggerDef.getPaths().put("/rest/ci/{ciElid}/Data", new Path().get(getCIRESTOperation("CiData",params)));
 		
 		params = new ArrayList<Parameter>();
-		params.add(new QueryParameter().name("sessionid").required(true).type("string").description("Session-ID"));
+		if(this.sessionIdAsQueryParam){
+			params.add(new QueryParameter().name("sessionid").required(true).type("string").description("Session-ID"));
+		}
 		params.add(new QueryParameter().name("planView").required(false).type("boolean").description("plan view"));
 		params.add(new PathParameter().name("ciElid").required(true).type("string"));
 		//Path path = new Path().get(getCIRESTOperation("CiHeadData",params));
@@ -393,7 +403,13 @@ public class SwaggerGenerator {
 		bgeEntities = dto.getEntities();
 		
 		List<EntityInfoDto> entities;*/
-		
+
+		if (sessionIdAsQueryParam){
+			log.info("Adding sessionId as queryParameter");
+		} else {
+			log.info("NOT adding sessionId as queryParameter");
+		}
+				
 		getBGSpecs();
 		List<EntityDto> entities = this.bgeEntitiesDetailed;
 		List<EntityDto> filteredEntities;
@@ -946,16 +962,19 @@ public class SwaggerGenerator {
 		contentTypes.add("application/json");
 		op.setConsumes(contentTypes);
 		op.setProduces(contentTypes);
+		
 
 		//Parameters
 		List<Parameter> parameters = new ArrayList<Parameter>();
 		//Session-ID
-		QueryParameter session = new QueryParameter();
-		session.setName("sessionId");
-		session.setRequired(true);
-		session.setType("string");
-		session.setDescription("Session-ID");
-		op.addParameter(session);
+		if(this.sessionIdAsQueryParam){
+			QueryParameter session = new QueryParameter();
+			session.setName("sessionId");
+			session.setRequired(true);
+			session.setType("string");
+			session.setDescription("Session-ID");
+			op.addParameter(session);
+		}
 
 		//Path parameter
 		Pattern pattern = Pattern.compile("\\{([^\\}]*)\\}");
@@ -1150,12 +1169,14 @@ public class SwaggerGenerator {
 
 		//Parameters
 		//Session-ID
-		QueryParameter session = new QueryParameter();
-		session.setName("sessionId");
-		session.setRequired(true);
-		session.setType("string");
-		session.setDescription("Session-ID");
-		op.addParameter(session);
+		if (sessionIdAsQueryParam){
+			QueryParameter session = new QueryParameter();
+			session.setName("sessionId");
+			session.setRequired(true);
+			session.setType("string");
+			session.setDescription("Session-ID");
+			op.addParameter(session);
+		}
 
 		//Path parameter
 		Pattern pattern = Pattern.compile("\\{([^\\}]*)\\}");

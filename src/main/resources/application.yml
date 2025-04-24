@@ -4,8 +4,9 @@ app:
   generator:
     output: ${GENERATOR_OUTPUT:./bge-swagger.json}
     generate-enums: ${GENERATOR_GENERATE_ENUM:false}    
+    sessionid-as-queryparam: ${GENERATOR_SESSIONID_AS_QUERYPARAM:true}
 
 logging:
   level:
     root: ERROR
-    # de.witcom: DEBUG
+    de.witcom: INFO

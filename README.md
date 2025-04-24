@@ -19,8 +19,7 @@ Configuration is done with ENV-Variables
 * CMD_BASE_URL - required: Base-Url of Command-Instance 
 * GENERATOR_OUTPUT - optional. Defines the file the specs are written to. defaults to ./bge-swagger.json
 * ENTITY_LIST - optional comma-separated list of entities to generate, defaults to all entities
-
-
+* GENERATOR_SESSIONID_AS_QUERYPARAM - add sessionId as required query-parameter Defaults to true
 ## ToDos
 
 * Support 

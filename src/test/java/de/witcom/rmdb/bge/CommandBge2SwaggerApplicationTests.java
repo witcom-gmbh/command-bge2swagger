@@ -52,9 +52,9 @@ public class CommandBge2SwaggerApplicationTests {
 	//@Ignore
 	public void testGenerator() throws Exception {
 		
-		// if (entityList.isEmpty()) {
-		//  	entityList.add("custom.postalAddress");
-		// }
+		if (entityList.isEmpty()) {
+		 	entityList.add("easysearch");
+		}
 		
 		swaggerGen.generateEntities(entityList);
 		swaggerGen.generateRestServices();
