@@ -8,12 +8,6 @@ services:
       dockerfile: Dockerfile
       # [Optional] You can use build args to set options. e.g. 'VARIANT' below affects the image in the Dockerfile
       args: 
-        VARIANT: 17-buster
-        INSTALL_MAVEN: "true"
-        MAVEN_VERSION: "3.8.4"
-        INSTALL_GRADLE: "false"
-        NODE_VERSION": "none"
-        INSTALL_NGROK: "true"
         SKIP_APT_PEER_VERIFY: "true"
     env_file: .env
     volumes:
@@ -34,4 +28,9 @@ services:
     #network_mode: service
     #network_mode: service:cmdsink_broker
 
+    network_mode: service:bge2swagger_pause
 
+  bge2swagger_pause:
+    image: k8s.gcr.io/pause
+    hostname: pause
+    container_name: bge2swagger_pause
