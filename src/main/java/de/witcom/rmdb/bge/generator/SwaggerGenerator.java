@@ -789,19 +789,14 @@ public class SwaggerGenerator {
 	 * @return REST-Opertion path for swagger-definition
 	 */
 	private String getOperationPath(String url) {
-		
 		String pathToRemove="";
-		//Cmd 12 only has relative path
+		//starting with command 12 we can use the path as is
 		if (url.startsWith("/")) {
-			pathToRemove =  swaggerDef.getBasePath();
-			
+			return url;
 		} else {
 			pathToRemove = bgeBaseUrl + swaggerDef.getBasePath();
-			
 		}
-		
 		return url.substring(pathToRemove.length());
-		
 	}
 
 	/**
@@ -1776,7 +1771,8 @@ public class SwaggerGenerator {
 		swaggerDef.setInfo(info );
 		swaggerDef.setHost(swaggerHost);
 		//swaggerDef.setBasePath("/axis/api/rest");
-		swaggerDef.setBasePath("/axis");
+		// starting from command 14.2 /axis has been omitted
+		swaggerDef.setBasePath("/");
 		
 		//URL url = new URL(this.bgeBaseUrl);
 		this.swaggerHost = url.getAuthority();
